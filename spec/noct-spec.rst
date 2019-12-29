@@ -179,7 +179,6 @@ Below is a list of keywords::
 - typedef
 - union
 - unsafe
-- weak
 - while
 
 Type keywords
@@ -220,6 +219,7 @@ Context dependent keywords
 - package
 - Self
 - self
+- weak
 
 Special Keywords
 ^^^^^^^^^^^^^^^^
@@ -356,9 +356,9 @@ An integer literal represents an integer value, meaning a number without any dec
 .. code-block::
 
     integer-lit = ( bin-lit | oct-lit | dec-lit | hex-lit ), [integer-suffix];
-    bin-lit = ( '0b' | '0B' ), bin-digit, { bin-digit };
-    oct-lit = ( '0o' | '0O' ), oct-digit, { oct-digit };
-    dec-lit = [ '-' ], dec-digit, { dec-digit };
+    bin-lit = ( '0b' | '0B' ), bin-digit, { bin-digit | '_'] };
+    oct-lit = ( '0o' | '0O' ), oct-digit, { oct-digit | '_' };
+    dec-lit = [ '-' ], dec-digit, { dec-digit | '_' };
     hex-lit = ( '0x' | '0X' ), hex-digit, { hex-digit };
     integer-suffix = ( 'i' | 'u' ), ( '8' | '16' | '32' | '64' | '128' );
 
@@ -377,11 +377,11 @@ A floating-point literal represents a numeric value, which can have a decimal pa
 
 .. code-block::
 
-    fp-lit = [ '-' ], ( dec-digit, { dec-digit }, fp-exp )
-                    | ( dec-digit, { dec-digit }, '.', dec-digit, { dec-digit }, [fp-exp] )
-                    | ( '.' dec-digit, { dec-digit } ),
+    fp-lit = [ '-' ], ( dec-digit, { dec-digit | '_' }, fp-exp )
+                    | ( dec-digit, { dec-digit | '_' }, '.', dec-digit, { dec-digit | '_' }, [fp-exp] )
+                    | ( '.' dec-digit, { dec-digit | '_' } ),
                     [fp-suffix];
-    fp-exp = ( 'e' | 'E' ), [ '-' ], dec-digit, { dec-digit };
+    fp-exp = ( 'e' | 'E' ), [ '-' ], dec-digit, { dec-digit | '_' };
     fp-suffix = 'f', ( '16' | '32' | '64' | '128' );
 
 Examples::
@@ -410,9 +410,9 @@ Examples::
     `ä`
     `本`
     `\t`
-    `\000`
-    `\007`
-    `\377`
+    `\o000`
+    `\o007`
+    `\o377`
     `\x07`
     `\xff`
     `\u12E4`
