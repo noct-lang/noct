@@ -316,6 +316,11 @@ An operator defines a certain operation that will happen on an expression, where
                          | '>>*='
                          | '!'
                          | '!='
+                         | '!<'
+                         | '!('
+                         | '!{'
+                         | '!['
+                         | '?'
                          | '('
                          | ')'
                          | '{'
@@ -333,12 +338,8 @@ An operator defines a certain operation that will happen on an expression, where
                          | '..='
                          | '@'
                          | '@:'
-                         | '!<'
-                         | '!('
-                         | '!{'
-                         | '!['
-                         | '?'
                          | '??'
+                         | '?:'
                          | '?.'
                          | '?['
                          | '#';
@@ -1284,6 +1285,24 @@ An assignment expression allows a value to be assigned, to one or more variables
               | '^='
               | '|=';
 
+========== =========================
+ Operator   Description
+========== =========================
+ `+=`       addition
+ `-=`       subtraction
+ `*=`       multiplication
+ `/=`       division
+ `~=`       concatenation
+ `&=`       binary and
+ `|=`       binary or
+ `<<=`      shift left
+ `<<<=`     'arithmetic' shift left
+ `<<*=`     rotate left
+ `>>=`      shift right
+ `>>>=`     arithmetic shift right
+ `>>*=`     rotate right
+========== =========================
+
 Ternary expressions
 -------------------
 
@@ -1297,6 +1316,37 @@ Binary expressions
 ------------------
 
 A binary expression uses 2 values, on both sides of it, to generate a new value.
+
+========== =========================
+ Operator   Description
+========== =========================
+ `+`        addition
+ `-`        subtraction
+ `*`        multiplication
+ `/`        division
+ `~`        concatenation
+ `&`        binary and
+ `&&`       logical and
+ `|`        binary or
+ `||`       logical or
+ `<`        less than
+ `<<`       shift left
+ `<=`       less or equal than
+ `<<<`      'arithmetic' shift left
+ `<<*`      rotate left
+ `>`        greater then
+ `>>`       shift right
+ `>=`       greater or equal than
+ `>>>`      arithmetic shift right
+ `>>*`      rotate right
+ `==`       equal to
+ `!=`       not equal to
+ `..`       range [)
+ `..=`      range []
+ `??`       null coalescence
+ `?:`       elvis operator
+ `in`       contains operator
+========== =========================
 
 .. code-block::
 
@@ -1325,8 +1375,9 @@ A binary expression uses 2 values, on both sides of it, to generate a new value.
            | '=='
            | '!='
            | '..'
-           | '..='d
+           | '..='
            | '??'
+           | '?:'
            | 'in';
 
 Operator precedence
@@ -1346,7 +1397,7 @@ A lower precedence means it will be executed before operators with a higher prec
  6            `..` `..=`
  7            `in`
  8            `==` `!=` `<` `<=` `>` `>=`
- 9            `??`
+ 9            `??` `?:`
  10           `&&`
  11           `||`
 ============ ===================================
@@ -1355,6 +1406,19 @@ Unary expressions
 -----------------
 
 A unary expression takes in a value, and returns another value, depending on the operand.
+
+========== =========================
+ Operator   Description
+========== =========================
+ `+`        positive
+ `++`       increment
+ `--`       negative
+ `-`        decrement
+ `!`        logical negation
+ `~`        binary negation
+ `*`        dereference
+ `&`        address of
+========== =========================
 
 .. code-block::
 
