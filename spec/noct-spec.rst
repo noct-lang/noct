@@ -93,6 +93,7 @@ An escape code is a special character encoding that can be used in character and
 
 Examples::
 
+    \0
     \a
     \b
     \f
@@ -152,6 +153,7 @@ Below is a list of keywords::
 - continue
 - defer
 - do
+- else
 - enum
 - fallthrough
 - for
@@ -342,7 +344,8 @@ An operator defines a certain operation that will happen on an expression, where
                          | '?:'
                          | '?.'
                          | '?['
-                         | '#';
+                         | '#'
+                         | '$';
 
 Literals
 ========
