@@ -853,7 +853,7 @@ Strong interfaces
 
 A strong interface is an interface that needs to be explicitly implemented for a type.
 
-    strong-interface-declaration = 'interface', identifier, [generic-decl], '{', '}';
+    strong-interface-declaration = 'interface', identifier, [generic-decl], '{', { interface-member } '}';
 
 Multi interfaces
 ````````````````
@@ -871,7 +871,7 @@ A type alias is a way of referring to a type with a different identifier. When t
 
 .. code-bloc::
 
-    type-alias-decl = 'typealias', [ generic-declaration ], identifier, [ '=', type ];
+    type-alias-decl = 'typealias', [ generic-decl ], identifier, [ '=', type ];
 
 Typedef
 -------
@@ -880,7 +880,7 @@ A typedef is similar to a type alias, but it creates a type that is distinct to 
 
 .. code-block::
 
-    typedef-decl = 'typedef', [ generic-declaration ], identifier, '=', type.
+    typedef-decl = 'typedef', [ generic-decl ], identifier, '=', type.
 
 Function types
 --------------
@@ -988,14 +988,14 @@ Function declarations
 
 .. code-block::
 
-    func-decl = { func-attribute }, 'func', identifier, func-signature, '{', { statement }, '}';
+    func-decl = { func-attribute }, 'func', identifier, [ generic-decl ], func-signature, [ generic-where-clause ], '{', { statement }, '}';
 
 Method declarations
 ```````````````````
 
 .. code-block::
 
-    method-decl = { method-attribute }, 'func', method-receiver, identifier, func-signature, '{', { statement }, '}';
+    method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
     method-receiver = [ '&', [ 'const' ] ], 'self';
 
 Implementation declaration
@@ -1005,7 +1005,7 @@ An implementation declaration allows methods and specific members to be implemen
 
 .. code-block::
 
-    impl-decl = 'impl', generic-declaration, type, [ ':', type ], '{', { statement }, '}';
+    impl-decl = 'impl', generic-decl, type, [ ':', type ], '{', { statement }, '}';
 
 Block statement
 ---------------
@@ -1824,7 +1824,7 @@ There are 2 types of generic parameters that exists::
 
 .. code-block::
 
-    generic-declaration = '<', generic-param, { ',', generic-param }, '>';
+    generic-decl = '<', generic-param, { ',', generic-param }, '>';
     generic-param = generic-type-param | generic-value-param | generic-param-specialization;
     generic-type-param = identifier, [ 'is', type ], [ '=', type ];
     generic-value-param = identifier, ':', type, [ '=', expression ];
