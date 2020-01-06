@@ -1239,7 +1239,7 @@ A conditional compilation statement is a statement where the body will only be e
 
 .. code-block::
 
-    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', conditional-value, ')', '{', { statement }, '}';
+    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', conditional-value, ')', statement, [ 'else', statement ];
 
 Unit test statements
 --------------------
@@ -1458,6 +1458,15 @@ An operand is a value, where operators can be called on. These are things like s
             | bracketed-expression
             | comp-run-expression;
 
+Qualified name expressions
+--------------------------
+
+A qualified name expression is an expression that refers to a variable.
+
+.. code-block::
+
+    qualified-name-expression = identifier, { '::', identifier };
+
 Index and slice expressions
 ---------------------------
 
@@ -1577,15 +1586,6 @@ An array initializer creates a new instance of an array, with the same amount of
 .. code-block::
 
     array-init = '[' expression, { ',', expression }, ']';
-
-Literal expressions
--------------------
-
-A literal expression generates a value for the literal that is given;
-
-.. code-block::
-
-    literal-expression = int-lit | fp-lit | char-lit | string-lit | bool-lit | null-lit;
 
 Cast expressions
 ----------------
