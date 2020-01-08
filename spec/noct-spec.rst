@@ -1890,8 +1890,8 @@ A macro can be defined in 2 ways. When only a single pattern is needed, the patt
 .. code-block::
 
     decl-macro = [ macro-attribute ], 'macro', identifier, '(', macro-pattern, )', '{', { statement } '}', ';'
-               | [ macro-attribute ], 'macro', identifier, '{', macro-case, { ',', macro-case } '}';
-    macro-case = '(', macro-pattern, )', '=>', '{', { statement } '}';
+               | [ macro-attribute ], 'macro', identifier, '{', macro-rule, { ',', macro-rule } '}';
+    macro-rule = '(', macro-pattern, )', '=>', '{', { statement } '}';
 
 Procedural macros
 -----------------
@@ -1903,7 +1903,7 @@ Like declarative macros, procedural macros can also have multiple patterns to ma
 .. code-block::
 
     proc-macro = [ macro-attribute ], 'macro', 'func', identifier, '(', identifier, ')', '(', macro-pattern, ')', '{', {statement} '}'
-               | [ macro-attribute ], 'macro', 'func', identifier, '(', identifier, ')', '{', macro-case, { ',', macro-case } '}';
+               | [ macro-attribute ], 'macro', 'func', identifier, '(', identifier, ')', '{', macro-rule, { ',', macro-rule } '}';
 
 Matching
 --------
@@ -1911,6 +1911,15 @@ Matching
 When a macro is evaluated of instantiation, a pattern is needed to match to the input parameters. This match exists out of 0 or more sub-patterns and if possibly followed by a repetition (requires more than 1 sub-pattern to exist).
 
 A sub-pattern can be a single variable, or a group of variables, separated by a specific token. A group can consist out of just 1 variable, when this happens, it will be ignored if no repetition characters follow it.
+
+Each macro variable has a special kind defined after the identifier:
+
+- stmt: Statement
+- expr: Expression
+- iden: Single identifier
+- qual: Qualified name
+- attr: Attrtibute
+- toks: Token stream
 
 A repetition character tell how many times the sub-pattern needs to appear:
 
@@ -1920,14 +1929,17 @@ A repetition character tell how many times the sub-pattern needs to appear:
 
 .. code-block::
 
-    macro-pattern = [ macro-pattern-fragment, { [macro-seperator], macro-pattern-fragment }, [ '*' ] ];
-    macro-pattern-fragment = '&(', macro-var, { ',', macro-var } ')', [macro-seperator], [ '*' | '+' | '?' ]
+    macro-pattern = { [macro-seperator], macro-pattern-fragment }, [ '*' ];
+    macro-pattern-fragment = '&(', macro-pattern, ')', [macro-seperator], [ '*' | '+' | '?' ]
                            | macro-var;
     macro-separator = ',' | '.' | ':' | ';' | '->' | '=>' | '-' | '|';
-    macro-var = '$', identifier [ ':', macro-var-specifier ];
-    macro-var-specifier = 'stmt'
-                        | 'expr'
-                        | 'iden'
+    macro-var = '$', identifier [ ':', macro-var-kind ];
+    macro-var-kind = 'stmt'
+                   | 'expr'
+                   | 'iden'
+                   | 'qual'
+                   | 'attr'
+                   | 'toks';
 
 Macro body
 ----------
