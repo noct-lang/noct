@@ -895,7 +895,9 @@ A function type can actually 3 different types of functions: free functions, met
 
     func-type = 'func', func-signature;
     func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ '->', ret-type ]
-    parameters = { func-param-attribute } identifier-list, ':', type;
+    parameters = parameter-identifier-list, ':', type;
+    parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
+    parameter-identifier = { func-param-attribute }, identifier;
     variadic-parameter = identifier, '...'
                        | identifier, ':', type, '...';
     ret-type = type
@@ -995,7 +997,9 @@ Method declarations
 
 .. code-block::
 
-    method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
+    method-decl = normal-method-decl | empty-method-decl;
+    normal-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
+    empty-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, ';';
     method-receiver = [ '&', [ 'const' ] ], 'self';
 
 Implementation declaration
@@ -1223,15 +1227,6 @@ A compile time if expression selects the branch to take at compile-time.
 
     comp-if-statement = '#if', '(', [ var-decl ';' ], expression | block-expression, ')', statement, [ 'else', statement ];
 
-Compile-time for statements
-```````````````````````````
-
-A compile time statement runs a loop at compile-time
-
-.. code-block::
-
-    comp-for-statement = for-statement = '#for', '(', [ var-decl ], ';', expression | block-expression, ';', [expression], ')', statement;
-
 Conditional compilation statements
 ``````````````````````````````````
 
@@ -1239,7 +1234,7 @@ A conditional compilation statement is a statement where the body will only be e
 
 .. code-block::
 
-    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', conditional-value, ')', statement, [ 'else', statement ];
+    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', identifier, ')', statement, [ 'else', statement ];
 
 Unit test statements
 --------------------
@@ -1664,12 +1659,31 @@ Closure expression
 
 A closure expression generates a new closure.
 
+The parameters of a closure expression can be written without a type, when the types of the variables are inferable from the surrounding code.
+
+A closure may capture variables from the scope it's declared in, their are 2 types of captures: global and local. The global capture will only count for variables that do not have a local capture.
+
+global::
+
+    - `=`: The captured variables are copied
+    - `&`: The captured variables are references to the variables
+    - `move`:  The captured variables are moved
+
+local::
+
+    - `iden`: the specific variable will be copied
+    - `&iden`: the specific variable will be a reference to the variable
+    - `move`:  The captured variables are moved
+
 .. code-block::
 
-    closure-expression = '(', identifier-list, ')', '=>', closure-captures, '{', { statement }, '}';
+    closure-expression = '|', closure-param, { ',', closure-var }, '|', '=>', closure-captures, closure-body;
+    closure-param = identifier-list, [ ':', type ];
+    closure-body = expression
+                 | '{', { statement }, '}';
     closure-captures = '[' global-capture | ( local-capture, { ',', local-capture }) ']'
-    global-capture = '=' | '&';
-    local-capture = [ '&' ], identifier;
+    global-capture = 'move' | '=' | '&';
+    local-capture = [ '&' | 'move' ], identifier;
 
 Compile-time expressions
 ------------------------
@@ -1918,7 +1932,7 @@ Each macro variable has a special kind defined after the identifier:
 - expr: Expression
 - iden: Single identifier
 - qual: Qualified name
-- attr: Attrtibute
+- attr: Attribute
 - toks: Token stream
 
 A repetition character tell how many times the sub-pattern needs to appear:
@@ -1929,10 +1943,10 @@ A repetition character tell how many times the sub-pattern needs to appear:
 
 .. code-block::
 
-    macro-pattern = { [macro-seperator], macro-pattern-fragment }, [ '*' ];
-    macro-pattern-fragment = '&(', macro-pattern, ')', [macro-seperator], [ '*' | '+' | '?' ]
+    macro-pattern = { [ macro-seperator ], macro-pattern-fragment }, [ '*' ];
+    macro-pattern-fragment = '&(', macro-pattern, ')', [ '*' | '+' | '?' ]
                            | macro-var;
-    macro-separator = ',' | '.' | ':' | ';' | '->' | '=>' | '-' | '|';
+    macro-separator = { ? character sequence, except '$' or ')' ? };
     macro-var = '$', identifier [ ':', macro-var-kind ];
     macro-var-kind = 'stmt'
                    | 'expr'
