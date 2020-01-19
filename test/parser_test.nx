@@ -1,0 +1,190 @@
+module pack.subpack.mod;
+
+import some.other.pack : Some::Sym1 as name, Some::Sym2;
+
+struct StructName
+{
+    a : i8,
+    b, c : u8
+}
+
+union UnionName
+{
+    a : i32,
+    b : u32,
+    c : f32
+}
+
+enum ValueEnumName : u8
+{
+    Val0,
+    Val1 = 2,
+}
+
+enum AdtEnumName
+{
+    BlankMember,
+    TupleMember(i32, u32),
+    StructMember{ x : i32, y, z : f32 }
+}
+
+interface MarkerInterfaceName;
+
+weak interface WeakInterfaceName
+{
+    func MethodName();
+}
+
+interface StrongInterfaceName
+{
+    func(self) MethodName()
+    {
+
+    }
+}
+
+typealias TypealiasName = i8;
+typedef TypedefName = u8;
+
+func FuncName()
+{
+    {
+
+    }
+
+    if (true)
+    {
+
+    }
+    else if (a := false; a)
+    {
+
+    }
+
+    loop
+    {
+
+    }
+
+    while(true)
+    {
+
+    }
+
+    do
+    {
+
+    }
+    while(true);
+
+    for (i := 0; i < 10; ++i)
+    {
+
+    }
+
+    for (a, b in range)
+    {
+        
+    }
+
+    switch (val)
+    {
+        true where false => {},
+        _ => {}
+    }
+
+    :LabelName:
+
+    break;
+    break BreakName;
+
+    continue;
+    continue ContinueName;
+
+    fallthrough;
+
+    goto GotoName;
+
+    return 1;
+    return 1, 2, 3;
+
+    1;
+
+    defer 5;
+    stack_defer 6;
+
+    unsafe
+    {
+
+    }
+
+    #if (true)
+    {
+
+    }
+
+    #conditional(CondIden)
+    {
+
+    }
+    else #debug(DebugIden)
+    {
+
+    }
+
+    a = b;
+    c ? t : f;
+    x + z;
+    a in b;
+    a !in b;
+    a is u32;
+    ++i;
+    j++;
+    A::B::C;
+    arr[index];
+    arr[start:end];
+    arr[start0:];
+    arr[:end0];
+    NoArgFunc();
+    FuncName(1, 2);
+    aggr.member;
+    aggr.NoArgMethod();
+    aggr.Method(true, false);
+    tup.4;
+    cast(U32) i;
+    transmute(F32) i;
+    move m;
+    a := { return i; };
+    b := unsafe true;
+    c := 1, 2;
+    d := void;
+    | a , b : u32 |[ =, move d ]{};
+    #run r;
+    GenericName!<i32, :{N;}>;
+    MacroName!(a, b, c);
+}
+
+func GenericFunc<A, B is IA + IB = C, X : i32, Y : f32 = 2.5, :u8, :{ a + b; }>()
+{
+
+}
+
+macro DeclMacroName ($a:iden => $b:expr)
+{
+
+}
+
+macro RulesDeclMacroName
+{
+    ( $ty:type, $($ts:toks ,)* ) => {}
+}
+
+macro func DeclMacroName(ToksName) ($a:iden => $b:expr)
+{
+
+}
+
+macro func RulesDeclMacroName(ToksName)
+{
+    ( $ty:type, $($ts:toks ,)* ) => {}
+}

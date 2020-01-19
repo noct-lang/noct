@@ -164,7 +164,9 @@ Below is a list of keywords::
 - import
 - impl
 - in
+- !in
 - interface
+- is
 - lazy
 - loop
 - macro
@@ -222,6 +224,7 @@ Context dependent keywords
 - Self
 - self
 - weak
+- where
 
 Special Keywords
 ^^^^^^^^^^^^^^^^
@@ -1315,9 +1318,9 @@ Binary expressions
 
 A binary expression uses 2 values, on both sides of it, to generate a new value.
 
-========== =========================
+========== ===============================
  Operator   Description
-========== =========================
+========== ===============================
  `+`        addition
  `-`        subtraction
  `*`        multiplication
@@ -1344,7 +1347,7 @@ A binary expression uses 2 values, on both sides of it, to generate a new value.
  `??`       null coalescence
  `?:`       elvis operator
  `in`       contains operator
-========== =========================
+========== ===============================
 
 .. code-block::
 
@@ -1376,7 +1379,8 @@ A binary expression uses 2 values, on both sides of it, to generate a new value.
            | '..='
            | '??'
            | '?:'
-           | 'in';
+           | 'in'
+           | '!in';
 
 Operator precedence
 ```````````````````
@@ -1393,7 +1397,7 @@ A lower precedence means it will be executed before operators with a higher prec
  4            `^`
  5            `|`
  6            `..` `..=`
- 7            `in`
+ 7            `in` `!in`
  8            `==` `!=` `<` `<=` `>` `>=`
  9            `??` `?:`
  10           `&&`
@@ -1451,6 +1455,9 @@ An operand is a value, where operators can be called on. These are things like s
             | cast-expression
             | transmute-expression
             | bracketed-expression
+            | block-expression
+            | unsafe-expression
+            | is-expression
             | comp-run-expression;
 
 Qualified name expressions
@@ -1627,14 +1634,14 @@ A block expression is a special type of expression, which acts as if its a block
 
     block-expression = '{', { statement }, return-statement, '}';
 
-Unsafe block expressions
-------------------------
+Unsafe expressions
+------------------
 
 An unsafe block expression is a special type of expression, which acts as if its an unsafe block statement, but it returns a value at the end of the block.
 
 .. code-block::
 
-    unsafe-block-expression = 'unsafe', '{', { statement }, return-statement, '}';
+    unsafe-block-expression = 'unsafe', expression;
 
 Comma expression
 ----------------
@@ -1677,13 +1684,24 @@ local::
 
 .. code-block::
 
-    closure-expression = '|', closure-param, { ',', closure-var }, '|', '=>', closure-captures, closure-body;
+    closure-expression = '|', closure-param, { ',', closure-var }, '|', closure-captures, closure-body;
     closure-param = identifier-list, [ ':', type ];
     closure-body = expression
                  | '{', { statement }, '}';
     closure-captures = '[' global-capture | ( local-capture, { ',', local-capture }) ']'
     global-capture = 'move' | '=' | '&';
     local-capture = [ '&' | 'move' ], identifier;
+
+Is expression
+-------------
+
+The is expression checks if a variable of a specific type or implements a specific interface
+
+The expression can be left out when it is used as the static expression of an if statement
+
+.. code::
+
+    is-expression = [ expr ], 'is', type;
 
 Compile-time expressions
 ------------------------
@@ -1859,7 +1877,7 @@ It is possible to specialize a generic for certain types and values. To speciali
 
 .. code-block::
 
-    generic-specialization = ':', type | block-expression;
+    generic-specialization = ':', ( type | block-expression );
 
 Instantiation
 -------------
@@ -1932,6 +1950,7 @@ Each macro variable has a special kind defined after the identifier:
 - expr: Expression
 - iden: Single identifier
 - qual: Qualified name
+- iden: Identifier
 - attr: Attribute
 - toks: Token stream
 
@@ -1952,6 +1971,7 @@ A repetition character tell how many times the sub-pattern needs to appear:
                    | 'expr'
                    | 'iden'
                    | 'qual'
+                   | 'iden'
                    | 'attr'
                    | 'toks';
 

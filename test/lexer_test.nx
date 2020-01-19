@@ -18,7 +18,9 @@ immutable
 import
 impl
 in
+!in
 interface
+is
 lazy
 loop
 macro
