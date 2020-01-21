@@ -263,12 +263,12 @@ An identifier is a name that references some kind of value, e.g. a variable.
     identifier = ( unicode-letter | '_' ), { unicode-letter | unicode-digit | '_' };
     identifier-list = identifier, { ',', identifier };
 
-Certain identifier are reserved by the language. The use of these identifiers can cause unexpected errors or behavior.
+Certain identifier are reserved by the language. The use of these identifiers as names can cause unexpected errors or undefined behavior.
 The following are language reserved identifiers::
 
 - blank identifier: `_`
 - `keyword`_
-- Any identifier starting with a double underscore: `__`
+- Any identifier containing a double underscore: `__`
 
 Operators and punctuation
 `````````````````````````
@@ -1684,13 +1684,20 @@ local::
 
 .. code-block::
 
-    closure-expression = '|', closure-param, { ',', closure-var }, '|', closure-captures, closure-body;
+    closure-expression = '|', closure-param, { ',', closure-var }, '|', closure-ret, closure-captures, closure-body;
     closure-param = identifier-list, [ ':', type ];
+    closure-ret = '->', type;
     closure-body = expression
                  | '{', { statement }, '}';
-    closure-captures = '[' global-capture | ( local-capture, { ',', local-capture }) ']'
-    global-capture = 'move' | '=' | '&';
-    local-capture = [ '&' | 'move' ], identifier;
+
+Closure captures
+````````````````
+
+When using a variable that is declared outside of the closure is being used, the compiler tries to be as smart as possible whe it comes to using the capture. To capture, the following rules will be used:
+
+- If the variable is a reference, it will be captures as a reference.
+- If the variable is used after the closure, the closure will copy the variable (for optimization, the compiler is allowed to move the closure expression behind the last use of the captured variable, in case this variable is not written to and its last use is after the first use of the closure).
+- Otherwise, the variable will be moved into the closure
 
 Is expression
 -------------
@@ -1877,7 +1884,7 @@ It is possible to specialize a generic for certain types and values. To speciali
 
 .. code-block::
 
-    generic-specialization = ':', ( type | block-expression );
+    generic-specialization = ':', ( type | '{', expression, '}' );
 
 Instantiation
 -------------
@@ -1887,10 +1894,10 @@ To use anything with generics, the generic needs to be instantiate.
 .. code-block::
 
     generic-instantiation = '!<', generic-arg, { ',', generic-arg }, '>';
-    generic-arg = type | block-expression;
+    generic-arg = type | '{', expression, '}';
 
-Generic collision resolution
-----------------------------
+Generic instance collision resolution
+-------------------------------------
 
 When using generics, it is possible that multiple versions of a generic type can be used for a single instantiation: specializations.
 A first pass is done, which excludes any generics where the `where clause` evaluates to true, then these rules are followed::
@@ -1903,6 +1910,11 @@ A first pass is done, which excludes any generics where the `where clause` evalu
     - If 2 or more have the same number of matching args, go over all of them left to right, and pick the first one that matches all args.
     - Otherwise, generate an error
 
+Limitations
+-----------
+
+- Multiple generics with the same identifier, are required to be of the same type, i.e. `struct`, `union`, etc
+- Multiple generics with the same name, and same number of parameters, are not allowed. No distinguishment is made between type or value parameters, only the number of arguments is distinguished.
 
 Macros
 ======

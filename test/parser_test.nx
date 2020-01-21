@@ -158,13 +158,13 @@ func FuncName()
     b := unsafe true;
     c := 1, 2;
     d := void;
-    | a , b : u32 |[ =, move d ]{};
+    | a , b : u32 | -> bool {};
     #run r;
-    GenericName!<i32, :{N;}>;
+    GenericName!<i32, {N}>;
     MacroName!(a, b, c);
 }
 
-func GenericFunc<A, B is IA + IB = C, X : i32, Y : f32 = 2.5, :u8, :{ a + b; }>()
+func GenericFunc<A, B is IA + IB = C, X : i32, Y : f32 = 2.5, :u8, :{ a + b }>()
 {
 
 }
