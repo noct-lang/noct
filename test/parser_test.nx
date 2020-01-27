@@ -77,11 +77,6 @@ func FuncName()
     }
     while(true);
 
-    for (i := 0; i < 10; ++i)
-    {
-
-    }
-
     for (a, b in range)
     {
         
@@ -141,6 +136,7 @@ func FuncName()
     ++i;
     j++;
     A::B::C;
+    Iden::<Type as Interface>::Member;
     arr[index];
     arr[start:end];
     arr[start0:];
@@ -151,8 +147,8 @@ func FuncName()
     aggr.NoArgMethod();
     aggr.Method(true, false);
     tup.4;
-    cast(U32) i;
-    transmute(F32) i;
+    cast(u32) i;
+    transmute(f32) i;
     move m;
     a := { return i; };
     b := unsafe true;
@@ -164,7 +160,10 @@ func FuncName()
     MacroName!(a, b, c);
 }
 
-func GenericFunc<A, B is IA + IB = C, X : i32, Y : f32 = 2.5, :u8, :{ a + b }>()
+func MultiRetFunc() -> (i32, i32){}
+func MultiRetFunc() -> (name : i32, other : i32){}
+
+func GenericFunc<A, B is IA + IB = C, X : i32, Y : f32 = 2.5, :u8, :{ a + b }>() where A is IA, X is IB + IC
 {
 
 }
@@ -179,12 +178,24 @@ macro RulesDeclMacroName
     ( $ty:type, $($ts:toks ,)* ) => {}
 }
 
-macro func DeclMacroName(ToksName) ($a:iden => $b:expr)
+macro func DeclMacroName(ToksName) ($($a:iden,)*)
 {
-
+    ${
+        $a = 0;
+    }
 }
 
 macro func RulesDeclMacroName(ToksName)
 {
     ( $ty:type, $($ts:toks ,)* ) => {}
+}
+
+#unittest "unit test name"
+{
+
+}
+
+#benchmark "bench name"(state)
+{
+
 }

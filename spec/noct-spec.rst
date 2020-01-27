@@ -523,12 +523,15 @@ Literals can be implicitly converted to corresponding types, below is a table of
 Qualified names
 ===============
 
-A qualified name is an extension on identifiers that allows additional information to be added, refining the meaning of the identifier being used.
+A qualified name allows types, variables, etc, to be identified, including scope and the disambiguation of types, which implement multiple interfaces, with a common member.
+
+When a qualified name start with a double colon, it means the symbol resides in the global namespace, the namespace where packages and modules are located in.
 
 .. code-block::
 
     qualified-name = [ '::' ], { qualified-identifier, '::' ), qualified-identifier;
-    qualified-identifier = identifier;
+    qualified-identifier = identifier | generic-instance | interface-disambiguation;
+    interface-disambiguation = '<', type, 'as', interface-type, '>'
 
 Types
 =====
@@ -551,7 +554,9 @@ A type specifies the properties that a value has:
                    | slice-type
                    | tuple-type
                    | optional-type
-                   | func-type;
+                   | func-type
+                   | inline-struct
+                   | inline-enum;
 
 Builtin types
 -------------
@@ -713,6 +718,7 @@ There are 2 possible 'types' of structs:
 
 - Named struct: A struct declared with an name, this is the default type of struct
 - Anonymous struct: A struct declared without a name, this can only be used in certain places.
+- Inline struct: A struct, which' type is not accessible, but the variable being assigned that type can still access the members of it.
 
 A structure can be defined using a struct declaration:
 
@@ -720,6 +726,7 @@ A structure can be defined using a struct declaration:
 
     struct-decl = { struct-attribute }, struct, identifier, [generic-decl], '{', { struct-statement }, '}';
     anon-struct-decl = { struct-attribute }, struct, '{', [ struct-statement, ',', { struct-statement }], '}';
+    inline-struct-type = struct, '{', [ struct-statement, ',', { struct-statement }], '}';
     struct-statement = typed-var-decl  | anon-union-decl;
 
 
@@ -741,7 +748,6 @@ It should be noted that struct may not contain a variable with the struct as its
     {
         s0 : S0
     }
-
 
 Union types
 -----------
@@ -785,10 +791,11 @@ Enum types
 
 An enum is a user declared type, that contains a collection of values or tagged data.
 
-There are 2 possible enum subtypes:
+There are 3 possible enum subtypes:
 
 - Value enum
 - Adt enum
+- Inline enum
 
 .. code-block::
 
@@ -809,7 +816,7 @@ A value enum can be declared with a value enum declaration:
 ADT enum types
 ``````````````
 
-An ADT enum is an enum that represents a tagged union, meaning that each member is either an empty tag, or a tag for tuple or member connected with it. Unlike a value enum the value of a member can not be manually set, as an ADT enum will always try to use the smallest possible integer type as tag
+An ADT enum is an enum that represents a tagged union, meaning that each member is either an empty tag, or a tag for tuple or members connected with it. Unlike a value enum the value of a member can not be manually set, as an ADT enum will always try to use the smallest possible integer type as tag. When an adt enum has named members, the members are encapsulated in an inline struct.
 
 An ADT enum can be declared with a value enum declaration:
 
@@ -817,6 +824,15 @@ An ADT enum can be declared with a value enum declaration:
 
     adt-enum-decl = { enum-attribute }, 'enum', identifer, [ generic-decl], '{', [ adt-enum-member, { ',', adt-enum-member }, [','] ], '}';
     adt-enum-member = identifier, [ ( '(', type, { ',', type } ) |  ]
+
+Inline enum types
+`````````````````
+An inline enum is an enum which is mostly meant to be the type of a function parameter. It is declared an a value enum, but as the type of a param and cannot assign a value to the members. 
+After the declaration of the inline enum, the values can be access in the following way: `::InlEnumMember`, where `InlEnumMember` is the name of the member.
+
+.. code-block::
+
+    inline-enum = 'enum', '{', identifier, { ',', identifier } '}';
 
 Interface types
 ---------------
@@ -897,14 +913,15 @@ A function type can actually 3 different types of functions: free functions, met
 .. code-block::
 
     func-type = 'func', func-signature;
-    func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ '->', ret-type ]
+    func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ '->', ret-type |  ]
+    func-named-ret = '(', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, ')';
     parameters = parameter-identifier-list, ':', type;
     parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
     parameter-identifier = { func-param-attribute }, identifier;
     variadic-parameter = identifier, '...'
                        | identifier, ':', type, '...';
     ret-type = type
-             | '(', type, { ',', type }, ')';
+             | '(', identifier, ':', type, { ',' identifier, ':', , type }, ')';
 
 File structure
 ==============
@@ -1035,7 +1052,6 @@ A control-flow statement affect how code will be executed, dependent on one or m
                            | while-statement
                            | do-while-statement
                            | for-statement
-                           | for-range-statement
                            | switch-statement
                            | label-statement
                            | break-statement
@@ -1088,16 +1104,7 @@ For statements
 
 .. _`for statement`:
 
-A for statement iterates over a range of value. The statement is defined with 3, some of them may be empty, statements: the initializer, the condition and the increment. The statement starts by executing its initializer, checks the condition, executes its `body` and executes the increment, which then returns to the condition step. This statement will continue this cycle while the condition results in `true`.
-
-.. code-block::
-
-    for-statement = [ label-statement ], 'for', '(', [ var-decl ], ';', expression | block-expression, ';', [expression], ')', statement;
-
-For-range statements
-````````````````````
-
-A for-range statement iterates over a range of value, like the `for statement`_, but it doesn't run based on a user defined condition. It will run over all the values that are part of the range given to the statement.
+A for-range statement iterates over a range of values. It will run over all the values that are part of the range given to the statement.
 
 .. code-block::
 
@@ -1687,8 +1694,7 @@ local::
     closure-expression = '|', closure-param, { ',', closure-var }, '|', closure-ret, closure-captures, closure-body;
     closure-param = identifier-list, [ ':', type ];
     closure-ret = '->', type;
-    closure-body = expression
-                 | '{', { statement }, '}';
+    closure-body = expression;
 
 Closure captures
 ````````````````
@@ -1875,7 +1881,8 @@ The where clause can add additional constraints to a declaration, where the vers
 
 .. code-block::
 
-    generic-where-clause = 'where', expression;
+    generic-where-clause = 'where', type-bound, { ',', type-boundS, };
+    type-bound = type, 'is', type { '+', type };
 
 Specializations
 ---------------
@@ -1893,7 +1900,7 @@ To use anything with generics, the generic needs to be instantiate.
 
 .. code-block::
 
-    generic-instantiation = '!<', generic-arg, { ',', generic-arg }, '>';
+    generic-instance = '!<', generic-arg, { ',', generic-arg }, '>';
     generic-arg = type | '{', expression, '}';
 
 Generic instance collision resolution
@@ -1999,7 +2006,7 @@ When the match can have a repeating pattern, a special statement can be used: th
 .. code-block::
 
     macro-var-expression = '$', identifier;
-    macro-repeat-expression = '$(', statement, ')*';
+    macro-repeat-expression = '${', { statement }, '}';
 
 Instantiation
 -------------
