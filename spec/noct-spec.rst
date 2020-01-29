@@ -179,6 +179,9 @@ Below is a list of keywords::
 - struct
 - switch
 - transmute
+- try
+- try?
+- try!
 - typealias
 - typedef
 - union
@@ -223,25 +226,33 @@ Context dependent keywords
 - package
 - Self
 - self
+- throws
 - weak
 - where
 
 Special Keywords
 ^^^^^^^^^^^^^^^^
 
-Special keywords are special keywords, which are not part of any syntax, but have a language specific meaning
+Special keywords are keywords that start using a `#`, they are meant as keywords, without additionally limiting the identifiers that can be used, while still allowing easy expansion of the language without changing the core syntax. This type of keywords is the only kind of keyword that can contain capital letter (with the exception of the `Self` type keyword)
 
 Below is a list of special keywords::
 
-- `__FILE__`: File name
-- `__FILE_FULL_PATH__`: File name with full path
-- `__PACKAGE__`: Package name
-- `__MODULE__`: Module name
-- `__FULL_MODULE__`: Package and module name
-- `__LINE__`: Line number
-- `__FUNC__`: Function name with simple signature
-- `__FUNC_NAME__`: Name of function
-- `__PRETTY_FUNC__`: Function name, including namespace and full signature
+- #file
+- #fileFullPath
+- #package
+- #module
+- #fullModule
+- #line
+- #func
+- #funcName
+- #prettyFunc
+- #conditional
+- #debug
+- #run
+- #errorhandler
+- #if
+- #unittest
+- #benchmark
 
 Reserved keywords
 `````````````````
@@ -913,7 +924,7 @@ A function type can actually 3 different types of functions: free functions, met
 .. code-block::
 
     func-type = 'func', func-signature;
-    func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ '->', ret-type |  ]
+    func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ func-throws ], [ '->', ret-type |  ]
     func-named-ret = '(', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, ')';
     parameters = parameter-identifier-list, ':', type;
     parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
@@ -922,6 +933,17 @@ A function type can actually 3 different types of functions: free functions, met
                        | identifier, ':', type, '...';
     ret-type = type
              | '(', identifier, ':', type, { ',' identifier, ':', , type }, ')';
+
+
+Func throws
+```````````
+
+A function can 'throw' an error. This is mostly syntactic sugar, as a function that throws will return a tuple, of a nullable version of the return type and an error, when called using a `try` expression.
+If a function throws, it can be assigned to variables, a nullable version of the return type and an error, in this case, the error variable cannot be the a blank identifier. Otherwise, the function should be called using a try expression.
+
+.. code-block::
+
+    func-throws = 'throws', [ '(', identifier-type, ')' ];
 
 File structure
 ==============
@@ -952,7 +974,12 @@ A statement is a piece of code, which can contain a collection of other statemen
 .. code-block::
 
     module-statement = declaration | import-statement | conditional-compilation-statement;
-    sub-statement = control-flow-statement | expressions-statement | var-decl | defer-statement | unsafe-statement;
+    sub-statement = control-flow-statement 
+                  | expressions-statement 
+                  | var-decl 
+                  | defer-statement 
+                  | unsafe-statement
+                  | error-handler-statement;
     statement = module-statement | sub-statement;
 
 Import statements
@@ -1246,6 +1273,15 @@ A conditional compilation statement is a statement where the body will only be e
 
     conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', identifier, ')', statement, [ 'else', statement ];
 
+Error handler statement
+-----------------------
+
+An error handler statement is used when calling `try` and an error gets returned. When this statement is present, the `try` will call this handler, instead of propagating the error.
+
+.. code-block::
+
+    error-handler-statement = '#errorhandler', '(', identifier, [ ':', type ], ')', '{', { statement }, '}';
+
 Unit test statements
 --------------------
 
@@ -1269,13 +1305,17 @@ The `std.bench` module is required to run a benchmark.
 Expressions
 ===========
 
+.. code-block::
+
+    expression = assign-expr;
+
 Assignment expressions
 ----------------------
 
 An assignment expression allows a value to be assigned, to one or more variables. Values can also be modified, depending on the assignment operator used.
 .. code-block::
 
-    assign-expr = ternary-expression, [ assign-op, ternary-expression ];
+    assign-expr = ternary-expression, [ assign-op, assign-expression ];
     assign-op = '='
               | '+='
               | '-='
@@ -1318,7 +1358,7 @@ A ternary expression is similar to an `if statement`_, but selects one of two va
 
 .. code-block::
 
-    ternary-expression = binary-expression, [ '?', binary-expression, ':', binary-expression ];
+    ternary-expression = binary-expression, [ '?', ternary-expression, ':', ternary-expression ];
 
 Binary expressions
 ------------------
@@ -1465,6 +1505,8 @@ An operand is a value, where operators can be called on. These are things like s
             | block-expression
             | unsafe-expression
             | is-expression
+            | try-expression
+            | throw-expression
             | comp-run-expression;
 
 Qualified name expressions
@@ -1715,6 +1757,65 @@ The expression can be left out when it is used as the static expression of an if
 .. code::
 
     is-expression = [ expr ], 'is', type;
+
+Try expressions
+---------------
+
+A try expression will run a function that can 'throw', depending on the type of try, it will act in one of the following ways:
+
+- `try`: When an error handler is defined inside of the function it is called from, the error handler will be called, otherwise it will propagate the error and 'throw' in the calling function. (When no error handler is defined, the function that uses the try expression, is required to be able to throw a compatible error.)
+- `try?`: Any error thrown in the called function will be ignored and the nullable result will be given.
+- `try!`: When an error is thrown, the call will panic. When optimized, the optimizer may expect the call to never throw.
+
+.. code-block::
+
+    try-expr = ( 'try' | 'try?' | 'try!' ), operand;
+
+Throw expressions
+-----------------
+
+A throw expression can be called within any function that is defined as throws, it will early out the function and return the error supplied.
+
+.. code-block::
+
+    throw-expression = 'throw', expression;
+
+Special keyword expressions
+---------------------------
+
+A special keyword expression is an expression with a single keyword, that will be replaced with a specific value during compile time.
+
+List of keyword meanings
+
+- #file: File name (string literal)
+- #fileFullPath: File name with full path (string literal)
+- #package: Package name (string literal)
+- #module: Module name (string literal)
+- #fullModule: Package and module name (string literal)
+- #line: Line number (integer literal)
+- #func: Function name with simple signature (string literal)
+- #funcName: Name of function (string literal)
+- #prettyFunc: Function name, including namespace and full signature (string literal)
+- #prettyFunc: Function name, including namespace and full signature (string literal)
+- #prettyFunc: Function name, including namespace and full signature (string literal)
+- #prettyFunc: Function name, including namespace and full signature (string literal)
+- #prettyFunc: Function name, including namespace and full signature (string literal)
+
+.. code-block::
+
+    special-keyword-expression = '#file'
+                               | '#fileFullPath'
+                               | '#package'
+                               | '#module'
+                               | '#fullModule'
+                               | '#line'
+                               | '#func'
+                               | '#funcName'
+                               | '#prettyFunc';
+                               | '#prettyFunc';
+                               | '#prettyFunc';
+                               | '#prettyFunc';
+                               | '#prettyFunc';
 
 Compile-time expressions
 ------------------------
