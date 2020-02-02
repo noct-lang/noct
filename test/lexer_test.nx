@@ -3,12 +3,13 @@
 // keywords
 break
 cast
-cconst
+comptime
 const
 continue
 defer
 do
 enum
+errdefer
 fallthrough
 for
 func
@@ -28,11 +29,13 @@ module
 move
 public
 return
-stack_defer
 static
 struct
 switch
+throw
+throws
 transmute
+try
 typealias
 typedef
 union
@@ -70,15 +73,14 @@ Self
 self
 weak
 
-__FILE__
-__FILE_FULL_PATH__
-__PACKAGE__
-__MODULE__
-__FULL_MODULE__
-__LINE__
-__FUNC__
-__FUNC_NAME__
-__PRETTY_FUNC__
+#file
+#fileFullPath
+#package
+#module
+#fullModule
+#line
+#funcName
+#prettyFunc
 
 // operators and punctuation
 =
@@ -124,6 +126,7 @@ __PRETTY_FUNC__
 >>>=
 >>*=
 !
+!!
 !=
 !<
 !(

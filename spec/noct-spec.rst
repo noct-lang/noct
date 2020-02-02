@@ -148,13 +148,14 @@ Below is a list of keywords::
 
 - break
 - cast
-- cconst
+- comptime
 - const
 - continue
 - defer
 - do
 - else
 - enum
+- errdefer
 - fallthrough
 - for
 - func
@@ -174,14 +175,13 @@ Below is a list of keywords::
 - move
 - public
 - return
-- stack_defer
 - static
 - struct
 - switch
+- throw
+- throws
 - transmute
 - try
-- try?
-- try!
 - typealias
 - typedef
 - union
@@ -209,7 +209,6 @@ Type keywords
 - u32
 - u64
 - u128
-- void
 
 Constant keywords
 ^^^^^^^^^^^^^^^^^
@@ -331,6 +330,7 @@ An operator defines a certain operation that will happen on an expression, where
                          | '>>>='
                          | '>>*='
                          | '!'
+                         | '!!'
                          | '!='
                          | '!<'
                          | '!('
@@ -355,6 +355,7 @@ An operator defines a certain operation that will happen on an expression, where
                          | '@'
                          | '@:'
                          | '??'
+                         | '??='
                          | '?:'
                          | '?.'
                          | '?['
@@ -397,7 +398,6 @@ A floating-point literal represents a numeric value, which can have a decimal pa
 
     fp-lit = [ '-' ], ( dec-digit, { dec-digit | '_' }, fp-exp )
                     | ( dec-digit, { dec-digit | '_' }, '.', dec-digit, { dec-digit | '_' }, [fp-exp] )
-                    | ( '.' dec-digit, { dec-digit | '_' } ),
                     [fp-suffix];
     fp-exp = ( 'e' | 'E' ), [ '-' ], dec-digit, { dec-digit | '_' };
     fp-suffix = 'f', ( '16' | '32' | '64' | '128' );
@@ -556,7 +556,7 @@ A type specifies the properties that a value has:
 
 .. code-block::
 
-    type = { type-attribe }, ( simple-type | elaborate-type );
+    type = { type-attrib }, ( simple-type | elaborate-type );
     simple-type = builtin-type
                 | identifer-type;
     elaborate-type = ptr-type
@@ -636,15 +636,6 @@ A character type can store a unicode codepoint.
 
     character-type = 'char';
 
-Void types
-``````````
-
-A void type is a type with a lot of restrictions, as it is meant to be used for untyped pointers.
-
-.. code-block::
-
-    void-type = 'void';
-
 Identifier types
 ----------------
 
@@ -658,6 +649,8 @@ Pointer types
 -------------
 
 A pointer type is a type that can refer to location or address in memory of a value of its `base type`.
+
+To prevent a common issue, of trying to dereference pointer with a null value, a pointer cannot be assigned `null` to it. Any pointer that should be able to have `null` assigned to it, should be part of a nullable type. When applied to a pointer type, it acts both as syntactic sugar and a compiler hint.
 
 .. code-block::
 
@@ -696,6 +689,7 @@ Tuple types
 -----------
 
 A tuple type is a compound of multiple different subtypes. Like an array, the size of a tuple is defined at compile-time.
+A tuple can be empty, in this case, the empty-tuple acts like the 'void' type in C.
 
 .. code-block::
 
@@ -713,10 +707,11 @@ To prevent any issues with calling or accessing an optional type with no value, 
 
     optional-type = '?', type;
 
-Null coercing
-`````````````
+Null coalescing
+```````````````
 
-Optional types support coercing operators, there operator first check that the optional is null, before the execution. If the optional is null, null will be returned, otherwise it will execute the expression.
+Optional types support coalescing operators, are certain operators starting with '?'. When the preceding expression is null, the null value is propagated, otherwise the expression is executed.
+A special, null coalescing compatible operator can also be called on an optional type, the so called 'null-panicking' operator (postfix `!`).
 
 Struct types
 ------------
@@ -938,8 +933,8 @@ A function type can actually 3 different types of functions: free functions, met
 Func throws
 ```````````
 
-A function can 'throw' an error. This is mostly syntactic sugar, as a function that throws will return a tuple, of a nullable version of the return type and an error, when called using a `try` expression.
-If a function throws, it can be assigned to variables, a nullable version of the return type and an error, in this case, the error variable cannot be the a blank identifier. Otherwise, the function should be called using a try expression.
+A function can 'throw' an error. This is mostly syntactic sugar, as a function that throws will return a `Result` enum, which will either contain the actual return value, or an error value.
+`throws` additionally guarantees, that when an error is returned, the error value needs to be explicitly checked, called with try, or have a null coalescing operator called on it.
 
 .. code-block::
 
@@ -1030,7 +1025,7 @@ A variable declaration generates one or more variables in the current scope. Var
     var-decl = { var-decl-attribute } typed-var-decl | untyped-var-decl;
     typed-var-decl = identifier-list, ':', type, [ '=', expression | block-expression ];
     untyped-var-decl = identifier-list, ':=', expression | block-expression;
-    var-init-decl = expression | block-expression | void-expression;
+    var-init-decl = expression | block-expression;
 
 Function declarations
 `````````````````````
@@ -1097,7 +1092,7 @@ An if statement alters the control-flow, depending on a condition.
 
 .. code-block::
 
-    if-statement = 'if', '(', [ var-decl ';' ], expression | block-expression, ')', statement, [ 'else', statement ];
+    if-statement = 'if', [ var-decl ';' ], ? expression, expect aggr-init-expression ? | block-expression, '{', statement, '}', [ 'else', if-statement | ( '{', statement, '}' ) ];
 
 Loop statements
 ```````````````
@@ -1115,7 +1110,7 @@ A while statement executes its `body`, while its condition is `true`.
 
 .. code-block::
 
-    while-statement = [ label-statement ], 'while', '(', expression | block-expression, ')', statement;
+    while-statement = [ label-statement ], 'while', ? expression, expect aggr-init-expression ? | block-expression, '{', statement, '}';
 
 Do-while statements
 ```````````````````
@@ -1124,7 +1119,7 @@ A do-while statement is similar to a while statement, with the difference being 
 
 .. code-block::
 
-    do-while-statement = [ label-statement ], 'do', statement, 'while', '(', expression | block-expression, ')', ';';
+    do-while-statement = [ label-statement ], 'do', '{', statement, '}', 'while', ? expression, expect aggr-init-expression ? | block-expression, ';';
 
 For statements
 ``````````````
@@ -1132,18 +1127,20 @@ For statements
 .. _`for statement`:
 
 A for-range statement iterates over a range of values. It will run over all the values that are part of the range given to the statement.
+After the range of the for loop, an optional where clause can be added, this clauses is an expression that returns a boolean value and decides if the iteration needs to be looped over.
 
 .. code-block::
 
-    for-range-statement = [ label-statement ], 'for', '(', identifier-list, 'in', expression, ')', statement;
+    for-range-statement = [ label-statement ], 'for', identifier-list, 'in', ? expression, expect aggr-init-expression ?, [ for-where-clause ], '{', statement, '}';
+    for-where-clause = 'where', expression;
 
 Switch statements
 `````````````````
 
 A switch statement does a pattern match on a given value and changes the code flow based on that. All possible paths are defined as cases, a case exists out of 3 elements::
 
-- Static expression: can be any compile-time executable expression or a blank identifier, signalling that it is a default case when no patterns match.
-- Dynamic expression: An additional runtime expression, which can be used to distinguish between multiple cases with the same static expression, these conditions are check from top to bottom.
+- Pattern: The pattern to match when switching the value.
+- Expression: An additional runtime expression, which can be used to distinguish between multiple cases with the same static expression, these conditions are check from top to bottom.
 - Statement: A statement to be executed when the case is selected.
 
 If a case is defined as '_', and no dynamic expression is included, this is used as the default case.
@@ -1151,8 +1148,8 @@ Each case will automatically break after the execution of its statement, unless 
 
 .. code-block::
 
-    switch-statement = 'switch', '(', expression, ')', '{', { 'switch-case' }, '}';
-    switch-case = expression, [ 'where', expression ], '=>', statement;
+    switch-statement = 'switch', ? expression, expect aggr-init-expression ?, '{', { 'switch-case' }, '}';
+    switch-case = pattern, [ 'where', expression ], '=>', statement;
 
 Label statements
 ````````````````
@@ -1232,16 +1229,14 @@ A scoped defer statement will execute its code when the current scope is exited,
 
     defer-statement = 'defer', expression, ';';
 
-Stack defer statements
+Error defer statements
 ``````````````````````
 
-A stack defer will execute its code when the current stack-frame is exited. Because of this property, a single stack defer may be executed multiple times and continue adding code to the defer stack.
-
-When this defer is executed, the code is added as a closure to a defer stack, separate from the actual stack, which will be executed on the scope exit.
+An error defer will only execute when a function is exited with a `throw` or catches an error using `try`, this allows the function to cleanup, before returning the error.
 
 .. code-block::
 
-    stack-defer-statement = 'stack_defer', expression, ';';
+    error-defer-statement = 'errdefer', expression, ';';
 
 Unsafe statement
 ----------------
@@ -1313,6 +1308,8 @@ Assignment expressions
 ----------------------
 
 An assignment expression allows a value to be assigned, to one or more variables. Values can also be modified, depending on the assignment operator used.
+Unlike other operators, the assignment operator is right associative, meaning that the value on the right of the operator has precedence over the assignment, with the exception of `??=`, where the left has precedence.
+
 .. code-block::
 
     assign-expr = ternary-expression, [ assign-op, assign-expression ];
@@ -1331,11 +1328,12 @@ An assignment expression allows a value to be assigned, to one or more variables
               | '>>*='
               | '&='
               | '^='
-              | '|=';
+              | '|='
+              | ??=;
 
-========== =========================
+========== ===================================================
  Operator   Description
-========== =========================
+========== ===================================================
  `+=`       addition
  `-=`       subtraction
  `*=`       multiplication
@@ -1349,7 +1347,11 @@ An assignment expression allows a value to be assigned, to one or more variables
  `>>=`      shift right
  `>>>=`     arithmetic shift right
  `>>*=`     rotate right
-========== =========================
+ `&=`       binary and
+ `^=`       binary xor
+ `|=`       binary or
+ `??=`      null-coalescing assign (assign if left is `null`)
+========== ===================================================
 
 Ternary expressions
 -------------------
@@ -1456,9 +1458,9 @@ Unary expressions
 
 A unary expression takes in a value, and returns another value, depending on the operand.
 
-========== =========================
+========== ============================
  Operator   Description
-========== =========================
+========== ============================
  `+`        positive
  `++`       increment
  `--`       negative
@@ -1467,14 +1469,16 @@ A unary expression takes in a value, and returns another value, depending on the
  `~`        binary negation
  `*`        dereference
  `&`        address of
-========== =========================
+ `!!`       true-ish or null-panicking
+========== ============================
 
 .. code-block::
 
     postfix-expression = ( postfix-expression | prefix-expression ), [ postfix-op ];
     prefix-expression = [ prefix-op ], ( operand | prefix-expression );
     postfix-op = '++'
-               | '--';
+               | '--'
+               | '!!';
     prefix-op = '+'
               | '++'
               | '-'
@@ -1482,7 +1486,8 @@ A unary expression takes in a value, and returns another value, depending on the
               | '!'
               | '~'
               | '*'
-              | '&';
+              | '&'
+              | '!!';
 
 Operands
 --------
@@ -1588,7 +1593,8 @@ Initialize expressions
                      | union-init
                      | enum-init
                      | tuple-init
-                     | array-init;
+                     | array-init
+                     | empty-init;
 
 Struct initialize expressions
 `````````````````````````````
@@ -1637,6 +1643,15 @@ An array initializer creates a new instance of an array, with the same amount of
 .. code-block::
 
     array-init = '[' expression, { ',', expression }, ']';
+
+Empty initializer
+`````````````````
+
+An empty expression is a special type of expression, which can be used when declaring a variable, without initializing it. This also means that any use of a variable without the actual initialization is illegal.
+
+.. code-block::
+
+    empty-init = '_';
 
 Cast expressions
 ----------------
@@ -1700,15 +1715,6 @@ A comma expression is a expression that exists out of multiple sub-expressions. 
 .. code-block::
 
     comma-expression = expression, { ',', expression };
-
-Void expression
----------------
-
-A void expression is a special type of expression, which can be used when declaring a variable, without initializing it. This also means that any use of a variable without the actual initialization, can not be used.
-
-.. code-block::
-
-    void-expression = 'void';
 
 Closure expression
 ------------------
@@ -1796,10 +1802,6 @@ List of keyword meanings
 - #func: Function name with simple signature (string literal)
 - #funcName: Name of function (string literal)
 - #prettyFunc: Function name, including namespace and full signature (string literal)
-- #prettyFunc: Function name, including namespace and full signature (string literal)
-- #prettyFunc: Function name, including namespace and full signature (string literal)
-- #prettyFunc: Function name, including namespace and full signature (string literal)
-- #prettyFunc: Function name, including namespace and full signature (string literal)
 
 .. code-block::
 
@@ -1811,10 +1813,6 @@ List of keyword meanings
                                | '#line'
                                | '#func'
                                | '#funcName'
-                               | '#prettyFunc';
-                               | '#prettyFunc';
-                               | '#prettyFunc';
-                               | '#prettyFunc';
                                | '#prettyFunc';
 
 Compile-time expressions
@@ -1829,6 +1827,130 @@ A compile-time run expression execute an expression at compile time.
 
     comp-run-expression = '#run', expression;
 
+Patterns
+========
+
+A pattern can be used to match against a given value, e.g. the value passed to a switch-statement.
+
+.. code_block::
+
+    pattern = placeholder-pattern
+                | wildcard-pattern
+                | value-bind-pattern
+                | literal-pattern;
+                | tuple-pattern
+                | enum-pattern
+                | aggr-pattern
+                | slice-pattern
+                | either-pattern;
+                | type-pattern;
+
+Pattern List
+------------
+
+
+Placeholder pattern
+-------------------
+
+A placeholder pattern matches any value.
+
+.. code-block::
+
+    placeholder-pattern = '_';
+
+Wildcard pattern
+----------------
+
+A wildcard pattern is like an empty-pattern, but matches all remaining values.
+
+.. code-block::
+
+    wildcard-pattern = '...';
+
+Value bind pattern
+------------------
+
+A value bind pattern is defined using an identifier, this identifier will than be bound to a certain value in the expressions matched to the pattern. A bound value may have a bound attached to it, which is represented by an additional pattern added to it.
+
+.. code-block::
+
+    value-bind-pattern = identifier [ '->', pattern ];
+
+Literal pattern
+---------------
+
+A literal pattern matches when the respective value is the same as the literal.
+
+.. code-block::
+
+    literal-pattern = ? any literal, except floating point literals, because of possible floating point inaccuracies ?;
+
+Range pattern
+-------------
+
+A range pattern matches any value that fits into the range it creates. This does limit the pattern to be used with sub-patterns that have a builtin type.
+
+.. code-block::
+
+    range-pattern = pattern, ( '..' | '..=' ), pattern;
+
+Tuple pattern
+-------------
+
+A tuple pattern matches the values inside a tuple.
+
+.. code-block::
+
+    tuple-pattern = '(', simple-pattern, { ',', simple-pattern }, ')';
+
+Enum pattern
+------------
+
+An enum pattern matches the enum member that corresponds to the given value. This type of pattern can only match value enums or adt enum members with a tuple type. To match enum with an aggregate type, the aggregate pattern should be used.
+
+.. code-block::
+
+    enum-pattern = identifier, [ '(' , simple-pattern, { ',', simple-pattern }, ')' ];
+
+Aggregate pattern
+-----------------
+
+An aggregate pattern matches the aggregate that corresponds to the given value. 
+Members of an aggregate type are not required to be matched in the same order as they appear in the aggregate, in this case, the identifier of the member can be added to each sub pattern. When matching members to patterns, all members have to be matched in that way.
+
+.. code-block::
+
+    aggr-pattern = qual-name, '{', simple-pattern, { ',', simple-pattern }, '}';
+    agg-sub-pattern = [ identifier, ':' ], pattern;
+
+Slice pattern
+-------------
+
+A slice pattern matches any array or slice with the corresponding size.
+
+.. code-block::
+
+    slice-pattern = '[', pattern, { ',', pattern }, ']';
+
+Either pattern
+--------------
+
+An either pattern matches is one of its sub-patterns matches the given value
+
+.. code-block::
+
+    either-pattern = pattern, '|', pattern, { '|', pattern };
+
+Type pattern
+------------
+
+A type patterns matches when the type of the given value corresponds to the type supplied to the pattern.
+
+.. code-block::
+
+    type-pattern = 'is', type;
+
+
 Attributes
 ==========
 
@@ -1838,7 +1960,7 @@ Compiler attributes
 A compiler attribute provides a hint to the compiler on how it should handle a certain piece of code.
 
 =================== ============ ============================================================================================================================ ==============================
- Attribute           Arguments   Desciption                                                                                                                    Restrictions (None if empty)
+ Attribute           Arguments   Description                                                                                                                   Restrictions (None if empty)
 =================== ============ ============================================================================================================================ ==============================
  align               i16          Set the minimum alignment of a type, alignment specified in range (1--512)
  inline              inl-kind     Hints how to inline a function (never -> will never inline, prefer -> try to inline if possible, always -> force inlining)
@@ -1849,7 +1971,7 @@ A compiler attribute provides a hint to the compiler on how it should handle a c
  use_outside_macro                Allows a declaration made inside of a macro to permeate out of a macro 
 =================== ============ ============================================================================================================================ ==============================
 
-.. code-blocK::
+.. code-block::
 
     compiler-attribute = '@:', identifier, [ '[', arg, { ',', arg }, ']' ];
 
@@ -1898,13 +2020,13 @@ Function and method Attributes
 
 A function attribute modifies the generation and execution of a function. The same counts for methods.
 
-- `cconst`: Compile time function, will not generate any runtime code.
+- `comptime`: Compile time function, will not generate any runtime code.
 
 .. code-block::
 
     func-attribute = compiler-attribute
                    | user-def-attribute
-                   | 'cconst';
+                   | 'comptime';
 
 Parameter attributes
 ````````````````````
@@ -1924,27 +2046,23 @@ Variable declaration attributes
 
 A variable declaration attributes modifies the variables that are declared.
 
-- `const`: The variable will use the type given, but will add the `const` modifier to it
-- `immutable`: The variable will use the type given, but will add the `immutable` modifier to it
+- `const`: Compile-time constant, type needs to be provided in the declaration.
 - `lazy`: The execution to initialize the variable will only be executed on the first use.
 - `static`: Only one version of this variable will exist and it will keeps its value between uses.
-- `cconst`: Compile-time constant, type needs to be provided in the declaration.
 
 .. code-block::
 
     var-decl-attribute = compiler-attribute
                        | user-def-attribute
                        | 'const'
-                       | 'immutable'
                        | 'lazy'
-                       | 'static'
-                       | 'cconst';
+                       | 'static';
 
 
 Other attributes
 ----------------
 
-All attibutes in this section are a collection of compiler, user defined, or visiblity attributes and do not have any special attribute on top of those.
+All attributes in this section are a collection of compiler, user defined, or visibility attributes and do not have any special attribute on top of those.
 
 .. code-block::
 
@@ -2082,7 +2200,7 @@ A repetition character tell how many times the sub-pattern needs to appear:
 
 .. code-block::
 
-    macro-pattern = { [ macro-seperator ], macro-pattern-fragment }, [ '*' ];
+    macro-pattern = { [ macro-separator ], macro-pattern-fragment }, [ '*' ];
     macro-pattern-fragment = '&(', macro-pattern, ')', [ '*' | '+' | '?' ]
                            | macro-var;
     macro-separator = { ? character sequence, except '$' or ')' ? };

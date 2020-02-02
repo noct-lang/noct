@@ -52,11 +52,11 @@ func FuncName()
 
     }
 
-    if (true)
+    if true
     {
 
     }
-    else if (a := false; a)
+    else if a := false; a
     {
 
     }
@@ -66,7 +66,7 @@ func FuncName()
 
     }
 
-    while(true)
+    while true
     {
 
     }
@@ -75,15 +75,26 @@ func FuncName()
     {
 
     }
-    while(true);
+    while true;
 
-    for (a, b in range)
+    for a, b in range
     {
         
     }
 
-    switch (val)
+    switch val
     {
+        ... => {},
+        null => {},
+        a => {},
+        a -> 1..3 => {},
+        (a, b, c) => {},
+        enumMember(a, b) => {},
+        some::Aggr{ a, b, c } => {},
+        some::Aggr{ a: x, b: y, c: z } => {},
+        [a, _, 1] => {},
+        4 | 5 | 6 => {},
+        is f32 => {},
         true where false => {},
         _ => {}
     }
@@ -106,7 +117,7 @@ func FuncName()
     1;
 
     defer 5;
-    stack_defer 6;
+    errdefer 6;
 
     unsafe
     {
@@ -126,7 +137,7 @@ func FuncName()
     {
 
     }
-
+    
     a = b;
     c ? t : f;
     x + z;
@@ -153,11 +164,12 @@ func FuncName()
     a := { return i; };
     b := unsafe true;
     c := 1, 2;
-    d := void;
+    d := _;
     | a , b : u32 | -> bool {};
     #run r;
     GenericName!<i32, {N}>;
     MacroName!(a, b, c);
+    iden!!;
 }
 
 func MultiRetFunc() -> (i32, i32){}
