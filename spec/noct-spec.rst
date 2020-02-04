@@ -168,6 +168,7 @@ Below is a list of keywords::
 - !in
 - interface
 - is
+- !is
 - lazy
 - loop
 - macro
@@ -258,9 +259,9 @@ Reserved keywords
 
 Keywords reserved for future use::
 
-- asm
-- delete
-- new
+- async
+- await
+- yield
 
 Identifiers
 ```````````
@@ -1756,13 +1757,12 @@ When using a variable that is declared outside of the closure is being used, the
 Is expression
 -------------
 
-The is expression checks if a variable of a specific type or implements a specific interface
-
-The expression can be left out when it is used as the static expression of an if statement
+The is expression checks if a variable of a specific type or implements a specific interface, or if it isn't a specific type or it doesn't implement a specific interface.
+When the is-expression is being used as a condition in a control-flow statement, the expression is a variable and the type is not an interface type, the exclusive path in the control-flow will promote that variable to the type being compared against.
 
 .. code::
 
-    is-expression = [ expr ], 'is', type;
+    is-expression = [ expr ], 'is' | '!is' , type;
 
 Try expressions
 ---------------
@@ -2190,7 +2190,8 @@ Each macro variable has a special kind defined after the identifier:
 - qual: Qualified name
 - iden: Identifier
 - attr: Attribute
-- toks: Token stream
+- toks: Token stream (contains matching brackets: '{}', '[]' and '()')
+- patr: Pattern
 
 A repetition character tell how many times the sub-pattern needs to appear:
 
