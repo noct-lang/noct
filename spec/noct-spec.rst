@@ -1207,6 +1207,15 @@ A return statement exist the current function, with a possible value. Multiple v
 
     return-statement = 'return' [ expression, { ',', expression } ], ';'
 
+Throw statements
+----------------
+
+A throw statement can be called within any function that is defined as throws, it will early out the function and return the error supplied.
+
+.. code-block::
+
+    throw-statement = 'throw', expression, ';';
+
 Expression statements
 ---------------------
 
@@ -1267,7 +1276,8 @@ A conditional compilation statement is a statement where the body will only be e
 
 .. code-block::
 
-    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', identifier, ')', statement, [ 'else', statement ];
+    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', identifier, [ cond-cmp, int-lit ], ')', statement, [ 'else', statement ];
+    cond-cmp = '==' | '!=' | '<' | '<=' | '>' '>=';
 
 Error handler statement
 -----------------------
@@ -1534,8 +1544,7 @@ If the null-coercing version is used, the expression will return a nullable valu
 .. code-block::
 
     index-slice-expression = expression, ( '[' | '?[' ), ( expression | slice-index ), ']';
-    slice-index = expression, ':', [ expression ]
-                | ':', expression;
+    slice-index = [ expression ], ':', [ expression ];
 
 Function call expressions
 -------------------------
@@ -1571,10 +1580,11 @@ Tuple access Expressions
 ------------------------
 
 A tuple access expression retrieves a value at a specific index in the tuple. While this function may seem similar to index with an integer, the statement is not called dynamically, but generates specific code to access that 'member'.
+If the null-coercing version is used, the expression will return an optional value.
 
 .. code-block::
 
-    tuple-access = expression, '.', int-lit;
+    tuple-access = expression, ( '.' | '?.' ), int-lit;
 
 Literal expressions
 -------------------
@@ -1767,24 +1777,12 @@ When the is-expression is being used as a condition in a control-flow statement,
 Try expressions
 ---------------
 
-A try expression will run a function that can 'throw', depending on the type of try, it will act in one of the following ways:
-
-- `try`: When an error handler is defined inside of the function it is called from, the error handler will be called, otherwise it will propagate the error and 'throw' in the calling function. (When no error handler is defined, the function that uses the try expression, is required to be able to throw a compatible error.)
-- `try?`: Any error thrown in the called function will be ignored and the nullable result will be given.
-- `try!`: When an error is thrown, the call will panic. When optimized, the optimizer may expect the call to never throw.
+A try expression will run a function that can 'throw'.
+When an error handler is defined inside of the function it is called from, the error handler will be called. Otherwise it will propagate the error and 'throw' in the calling function. (When no error handler is defined, the function that uses the try expression, is required to be able to throw a compatible error.)
 
 .. code-block::
 
-    try-expr = ( 'try' | 'try?' | 'try!' ), operand;
-
-Throw expressions
------------------
-
-A throw expression can be called within any function that is defined as throws, it will early out the function and return the error supplied.
-
-.. code-block::
-
-    throw-expression = 'throw', expression;
+    try-expr = 'try', operand;
 
 Special keyword expressions
 ---------------------------
@@ -1910,7 +1908,7 @@ An enum pattern matches the enum member that corresponds to the given value. Thi
 
 .. code-block::
 
-    enum-pattern = identifier, [ '(' , simple-pattern, { ',', simple-pattern }, ')' ];
+    enum-pattern = qual-name, [ '(' , simple-pattern, { ',', simple-pattern }, ')' ];
 
 Aggregate pattern
 -----------------
@@ -2147,6 +2145,16 @@ Macros
 
 A macro is a way of expressing code, that can be manually separated form the code, even when the use of a function or a generic is not possible. The macro system is an AST-based macro system and should therefore contain syntactically correct code, although this is not guaranteed to generate valid code semantically.
 
+Any macro is expected to result in one of the following kinds::
+
+- block (statement or expression)
+- statement
+- expression
+- pattern
+- type
+
+Anything else will result in invalid code.
+
 Declarative Macro
 -----------------
 
@@ -2186,12 +2194,21 @@ Each macro variable has a special kind defined after the identifier:
 
 - stmt: Statement
 - expr: Expression
-- iden: Single identifier
+- type: Type
 - qual: Qualified name
 - iden: Identifier
 - attr: Attribute
-- toks: Token stream (contains matching brackets: '{}', '[]' and '()')
+- toks: Token stream (A single token or tokens surrounded with '{}', '[]' and '()')(must contain matching bracket)
 - patr: Pattern
+
+Each macro variable kind also has specific characters that may follow it, this is to prevent any future addition to the syntax from braking the macros
+Below is a list of allowed tokens after the variable::
+
+- `stmt` and `expr`: `=>` `,` or `;`
+- `type`, `iden` or `qual`:  `=>` `,` `;` `:` `=` `|`
+- patr: `=>` `;` `:` `=` `|` `in`
+- attr: any token other than `(` `[` or `{`
+- toks: any token
 
 A repetition character tell how many times the sub-pattern needs to appear:
 
@@ -2199,20 +2216,21 @@ A repetition character tell how many times the sub-pattern needs to appear:
 - `+`: repeat 1 or more times
 - `?`: optional, may occur 0 or 1 time
 
+The sub-pattern inside of a repetition may not contain another repetition.
+
 .. code-block::
 
-    macro-pattern = { [ macro-separator ], macro-pattern-fragment }, [ '*' ];
-    macro-pattern-fragment = '&(', macro-pattern, ')', [ '*' | '+' | '?' ]
-                           | macro-var;
+    macro-pattern = { [ macro-separator ], macro-pattern-fragment | macro-var };
+    macro-pattern-fragment = '$(', macro-pattern, ')', [? character sequence, except '?', '+' or '*' ?], [ '*' | '+' | '?' ];
     macro-separator = { ? character sequence, except '$' or ')' ? };
     macro-var = '$', identifier [ ':', macro-var-kind ];
     macro-var-kind = 'stmt'
                    | 'expr'
                    | 'iden'
                    | 'qual'
-                   | 'iden'
                    | 'attr'
-                   | 'toks';
+                   | 'toks'
+                   | 'patr';
 
 Macro body
 ----------
@@ -2234,6 +2252,8 @@ Instantiation
 A macro instantiation is an expression or statement that tells the compiler what macro to invoke.
 
 The macro being used, will be processed from top to bottom, meaning that the first pattern that it can match to, is the macro case it will try to instantiate, if this results in any error, the compiler will not try to match any additional macro cases.
+
+When parsing a macro instantiation, the compiler needs to be able to figure out what the macro is, for this, it will base it's type on the surrounding tokens, if any ambiguity exists, the compiler will expect that the instantiation is a statement.
 
 .. code-block::
 
