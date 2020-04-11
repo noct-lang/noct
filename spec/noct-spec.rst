@@ -733,7 +733,7 @@ A structure can be defined using a struct declaration:
 
     struct-decl = { struct-attribute }, struct, identifier, [generic-decl], '{', { struct-statement }, '}';
     anon-struct-decl = { struct-attribute }, struct, '{', [ struct-statement, ',', { struct-statement }], '}';
-    inline-struct-type = struct, '{', [ struct-statement, ',', { struct-statement }], '}';
+    inline-struct-type = struct, '{', [ typed-var-decl, ',', { typed-var-decl }], '}';
     struct-statement = typed-var-decl  | anon-union-decl;
 
 
@@ -839,7 +839,7 @@ After the declaration of the inline enum, the values can be access in the follow
 
 .. code-block::
 
-    inline-enum = 'enum', '{', identifier, { ',', identifier } '}';
+    inline-enum = 'enum', '{', value-enum-member, { ',', value-enum-member } '}';
 
 Interface types
 ---------------
@@ -850,9 +850,12 @@ There are 3 types of interfaces:
 
 .. code-block::
 
-    interface-decl = marker-interface-declaration
-                   | weak-interface-declaration
-                   | strong-interface-declaration;
+    interface-decl = marker-interface-decl
+                   | weak-interface-decl
+                   | strong-interface-decl;
+    interface-member = func-decl
+                     | method-decl
+                     | typealias-decl;
 
 Marker interfaces
 `````````````````
@@ -861,7 +864,7 @@ A marker interface is the simplest type of interface, since it just marks a type
 
 .. code-block::
 
-    marker-interface-declaration = 'interface', identifier, ';';
+    marker-interface-decl = 'interface', identifier, ';';
 
 Weak interfaces
 ```````````````
@@ -870,7 +873,7 @@ A weak interface is an interface, which is implicitly implemented when the imple
 
 .. code-block::
 
-    weak-interface-declaration = 'weak', 'interface', identifier, '{', interface-member, { interface-member } '}';
+    weak-interface-decl = 'weak', 'interface', identifier, '{', interface-member, { interface-member } '}';
 
 Strong interfaces
 `````````````````
@@ -879,7 +882,7 @@ Strong interfaces
 
 A strong interface is an interface that needs to be explicitly implemented for a type.
 
-    strong-interface-declaration = 'interface', identifier, [generic-decl], '{', { interface-member } '}';
+    strong-interface-decl = 'interface', identifier, [generic-decl], '{', { interface-member } '}';
 
 Multi interfaces
 ````````````````
@@ -917,6 +920,8 @@ The last parameter is a variadic parameter which can take a 0 or more arguments.
 
 A function type can actually 3 different types of functions: free functions, methods and closures.
 
+Each parameter can also have a parameter label, which is an identifier followed by '=>' before the varaible name. If this label is supplied, this is the name that will be used for function overloading. see `Function overloading`_
+
 .. code-block::
 
     func-type = 'func', func-signature;
@@ -924,7 +929,7 @@ A function type can actually 3 different types of functions: free functions, met
     func-named-ret = '(', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, ')';
     parameters = parameter-identifier-list, ':', type;
     parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
-    parameter-identifier = { func-param-attribute }, identifier;
+    parameter-identifier = { func-param-attribute }, [ identifier, '=>' ], identifier;
     variadic-parameter = identifier, '...'
                        | identifier, ':', type, '...';
     ret-type = type
@@ -940,6 +945,11 @@ A function can 'throw' an error. This is mostly syntactic sugar, as a function t
 .. code-block::
 
     func-throws = 'throws', [ '(', identifier-type, ')' ];
+
+Note
+----
+
+For each qualified name, only a single user defined type can exist, regardless of generic parameters.
 
 File structure
 ==============
@@ -1035,6 +1045,37 @@ Function declarations
 
     func-decl = { func-attribute }, 'func', identifier, [ generic-decl ], func-signature, [ generic-where-clause ], '{', { statement }, '}';
 
+Function overloading
+^^^^^^^^^^^^^^^^^^^^
+
+Function overloading in Noct works differently to most languages, instead of overloads being differentiated by the types of the parameters, they are differentiated by the name of the parameters..
+
+.. code-block::
+
+    // conventional overloading
+    func Name(a:A) {}
+    func Name(a:B) {} // Error in noct: function with parameter names already exists
+
+    // noct overloading
+    func Name(a:A) {}
+    func Name(b:B) {}
+
+If a function has no overloads, it can be called without specifying the name of the arguments passed, otherwise, the name of the argmument needs to be specified.
+
+.. code-block::
+
+    // functions
+    func NoOverload(a:i32) {}
+    func Overload(a:i32) {}
+    func Overload(b:f32) {}
+    func Overload(c => b:f64) {}
+
+    // calls
+    NoOverload(1);
+    Overload(a:2);
+    Overload(b:3.0f32);
+    Overload(c:5.0);
+
 Method declarations
 ```````````````````
 
@@ -1043,7 +1084,7 @@ Method declarations
     method-decl = normal-method-decl | empty-method-decl;
     normal-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
     empty-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, ';';
-    method-receiver = [ '&', [ 'const' ] ], 'self';
+    method-receiver = '(', [ '&', [ 'const' ] ], 'self', ')';
 
 Implementation declaration
 ``````````````````````````
@@ -1319,7 +1360,7 @@ Assignment expressions
 ----------------------
 
 An assignment expression allows a value to be assigned, to one or more variables. Values can also be modified, depending on the assignment operator used.
-Unlike other operators, the assignment operator is right associative, meaning that the value on the right of the operator has precedence over the assignment, with the exception of `??=`, where the left has precedence.
+Unlike other operators, the assignment operator is right associative, meaning that the value on the right of the operator has precedence over the assignment, with the exception of `??=`, where the left has precedence, since `??=` depends on the value of the left expression.
 
 .. code-block::
 
@@ -1575,6 +1616,12 @@ If the null-coercing version is used, the expression will return an optional val
 .. code-block::
 
     method-call = operand, ( '.' | '?.' ), expression, '(', [ argument, { ',', argument } ], ')';
+
+Method resolution
+`````````````````
+When a disambiguous method is implement on a type itself and/or one or multiple interfaces, the following steps are used:
+1. If the method is available on the type itself (outside of interface implementations), that method will be used
+2. Otherwise, a qualified name with a type disambiguation is required
 
 Tuple access Expressions
 ------------------------
