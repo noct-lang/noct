@@ -41,6 +41,7 @@ Source code representation
 ==========================
 
 Source code for `noct` exists out of a valid sequence of UTF-8 characters. It's important to note that any unicode character that is represented as multiple unicode codepoints is interpreter as a sequence of multiple unicode character instead of a single unicode character.
+A source file will have the extension: .nx
 
 Whitespace, end of line, and end of file
 ----------------------------------------
@@ -846,6 +847,8 @@ Interface types
 
 An interface type is a user declared type, which does not hold data by itself, but imposes requirements for any type that wants to implement it.
 
+Interfaces can only be declared in the module's scope, meaning they cannot be nested inside other declarations
+
 There are 3 types of interfaces:
 
 .. code-block::
@@ -1123,7 +1126,8 @@ A control-flow statement affect how code will be executed, dependent on one or m
                            | fallthrough-statement
                            | goto-statement
                            | return-statement
-                           | comp-if-statement;
+                           | comp-if-statement
+                           | cond-comp-statement;
 
 If statements
 `````````````
@@ -1134,7 +1138,7 @@ An if statement alters the control-flow, depending on a condition.
 
 .. code-block::
 
-    if-statement = 'if', [ var-decl ';' ], ? expression, expect aggr-init-expression ? | block-expression, '{', statement, '}', [ 'else', if-statement | ( '{', statement, '}' ) ];
+    if-statement = 'if', [ var-decl ';' ], ? expression, except aggr-init-expression ? | block-expression, block-statement, [ 'else', ( if-statement | block-statement ) ];
 
 Loop statements
 ```````````````
@@ -1308,7 +1312,7 @@ A compile time if expression selects the branch to take at compile-time.
 
 .. code-block::
 
-    comp-if-statement = '#if', '(', [ var-decl ';' ], expression | block-expression, ')', statement, [ 'else', statement ];
+    comp-if-statement = '#if', [ var-decl ';' ], ? expression, except aggr-init-expression ? | block-expression, block-statement, [ 'else', ( if-statement | block-statement ) ];
 
 Conditional compilation statements
 ``````````````````````````````````
@@ -1317,7 +1321,7 @@ A conditional compilation statement is a statement where the body will only be e
 
 .. code-block::
 
-    conditional-compilation-statement = ( '#conditional' | '#debug' ), '(', identifier, [ cond-cmp, int-lit ], ')', statement, [ 'else', statement ];
+    cond-comp-statement = ( '#conditional' | '#debug' ), ' identifier, [ cond-cmp, int-lit ], block-statement, [ 'else', ( cond-comp-statement | block-statement ) ];
     cond-cmp = '==' | '!=' | '<' | '<=' | '>' '>=';
 
 Error handler statement
@@ -1362,6 +1366,10 @@ Assignment expressions
 An assignment expression allows a value to be assigned, to one or more variables. Values can also be modified, depending on the assignment operator used.
 Unlike other operators, the assignment operator is right associative, meaning that the value on the right of the operator has precedence over the assignment, with the exception of `??=`, where the left has precedence, since `??=` depends on the value of the left expression.
 
+.. note::
+
+    The expression on either side needs to conform to auto-referencing, unless the basic `=` is used, where only the left expression needs to conform
+
 .. code-block::
 
     assign-expr = ternary-expression, [ assign-op, assign-expression ];
@@ -1383,32 +1391,34 @@ Unlike other operators, the assignment operator is right associative, meaning th
               | '|='
               | ??=;
 
-========== ===================================================
- Operator   Description
-========== ===================================================
- `+=`       addition
- `-=`       subtraction
- `*=`       multiplication
- `/=`       division
- `~=`       concatenation
- `&=`       binary and
- `|=`       binary or
- `<<=`      shift left
- `<<<=`     'arithmetic' shift left
- `<<*=`     rotate left
- `>>=`      shift right
- `>>>=`     arithmetic shift right
- `>>*=`     rotate right
- `&=`       binary and
- `^=`       binary xor
- `|=`       binary or
- `??=`      null-coalescing assign (assign if left is `null`)
-========== ===================================================
+========== =================================================== ====================
+ Operator   Description                                         Overload Interface
+========== =================================================== ====================
+ `+=`       addition                                            OpAddAssign
+ `-=`       subtraction                                         OpSubAssign
+ `*=`       multiplication                                      OpMulAssign
+ `/=`       division                                            OpDivAssign
+ `~=`       concatenation                                       OpConcatAssign
+ `&=`       binary and                                          OpBinAndAssign
+ `^=`       binary xor                                          OpBinXorAssign
+ `|=`       binary or                                           OpBinOrAssign
+ `<<=`      shift left                                          OpShlAssign
+ `<<<=`     'arithmetic' shift left                             OpAShlAssign
+ `<<*=`     rotate left                                         OpRotlAssign
+ `>>=`      shift right                                         OpShrAssign
+ `>>>=`     arithmetic shift right                              OpAShrAssign
+ `>>*=`     rotate right                                        OpRotrAssign
+ `??=`      null-coalescing assign (assign if left is `null`)   n/a
+========== =================================================== ====================
 
 Ternary expressions
 -------------------
 
 A ternary expression is similar to an `if statement`_, but selects one of two values depending on a condition. Since this is an expression, it is required that both possible options have the same type.
+
+.. note::
+
+    If both conditional expressions conform to auto-referencing, the ternary expression also conforms to auto-referencing
 
 .. code-block::
 
@@ -1419,36 +1429,41 @@ Binary expressions
 
 A binary expression uses 2 values, on both sides of it, to generate a new value.
 
-========== ===============================
- Operator   Description
-========== ===============================
- `+`        addition
- `-`        subtraction
- `*`        multiplication
- `/`        division
- `~`        concatenation
- `&`        binary and
- `&&`       logical and
- `|`        binary or
- `||`       logical or
- `<`        less than
- `<<`       shift left
- `<=`       less or equal than
- `<<<`      'arithmetic' shift left
- `<<*`      rotate left
- `>`        greater then
- `>>`       shift right
- `>=`       greater or equal than
- `>>>`      arithmetic shift right
- `>>*`      rotate right
- `==`       equal to
- `!=`       not equal to
- `..`       range [)
- `..=`      range []
- `??`       null coalescence
- `?:`       elvis operator
- `in`       contains operator
-========== ===============================
+.. note::
+
+    The expression on either side needs to conform to auto-referencing
+
+========== =============================== ====================
+ Operator   Description                     Overload Interface
+========== =============================== ====================
+ `+`        addition                        OpAdd
+ `-`        subtraction                     OpSub
+ `*`        multiplication                  OpMul
+ `/`        division                        OpDiv
+ `~`        concatenation                   OpRem
+ `&`        binary and                      OpBinAnd
+ `&&`       logical and                     n/a
+ `|`        binary or                       OpBinOr
+ `||`       logical or                      n/a
+ `<`        less than                       OpPartialEq
+ `<<`       shift left                      OpShl
+ `<=`       less or equal than              OpPartialEq
+ `<<<`      'arithmetic' shift left         OpAShl
+ `<<*`      rotate left                     OpRotl
+ `>`        greater then                    OpPartialEq
+ `>>`       shift right                     OpShr
+ `>=`       greater or equal than           OpPartialEq
+ `>>>`      arithmetic shift right          OpAShr
+ `>>*`      rotate right                    OpRotr
+ `==`       equal to                        OpEq
+ `!=`       not equal to                    OpEq
+ `..`       range [) (exclusive)            OpRange
+ `..=`      range [] (inclusive)            OpRangeInc
+ `??`       null coalescence                n/a
+ `?:`       elvis operator                  n/a
+ `in`       contains operator               OpContains
+ `!in`      inverted contains operator      OpContains
+========== =============================== ====================
 
 .. code-block::
 
@@ -1510,19 +1525,19 @@ Unary expressions
 
 A unary expression takes in a value, and returns another value, depending on the operand.
 
-========== ============================
- Operator   Description
-========== ============================
- `+`        positive
- `++`       increment
- `--`       negative
- `-`        decrement
- `!`        logical negation
- `~`        binary negation
- `*`        dereference
- `&`        address of
- `!!`       true-ish or null-panicking
-========== ============================
+========== ============================ ====================
+ Operator   Description                  Overload Interface
+========== ============================ ====================
+ `+`        positive                     OpPos
+ `++`       increment                    OpInc
+ `--`       negative                     OpNeg
+ `-`        decrement                    OpDec
+ `!`        logical negation             OpNot
+ `~`        binary negation              OpBinNeg
+ `*`        dereference                  OpDeref
+ `&`        address of/ref               n/a
+ `!!`       true-ish or null-panicking   OpNullPanic
+========== ============================ ====================
 
 .. code-block::
 
@@ -1541,6 +1556,10 @@ A unary expression takes in a value, and returns another value, depending on the
               | '&'
               | '!!';
 
+.. note:
+
+    The '&' has some special behavior and depends on the type expected, the operator will return a reference to the sub-expression, with the exception for when the expected type for the expression is a pointer type, where it will return a pointer to the sub-expression
+
 Operands
 --------
 
@@ -1558,6 +1577,7 @@ An operand is a value, where operators can be called on. These are things like s
             | init-expression
             | cast-expression
             | transmute-expression
+            | move-expression
             | bracketed-expression
             | block-expression
             | unsafe-expression
@@ -1565,6 +1585,21 @@ An operand is a value, where operators can be called on. These are things like s
             | try-expression
             | throw-expression
             | comp-run-expression;
+
+Auto referencing
+````````````````
+
+Certain expression have auto-refencing, meaning that the compiler will implicitly take a reference to the sub expression if needed.
+Auto referncing will only happen in very specific cases:
+
+- On any expression that explicitly references a varaible, e.g. qualified name expressions
+- On any intermediate values, e.g. values returned from functions before being assigned
+- On any literal
+
+Auto-referencing can happen for the following expressions:
+- Operators: since they work on references to const types
+- Method calls (caller/receiver): When a method is called, which takes in the caller as a reference, automatic referencing on that caller
+
 
 Qualified name expressions
 --------------------------
@@ -2053,12 +2088,10 @@ Type Attributes
 A type modifiers changes the meaning of how the type stores a value.
 
 - `const`: A const type is an immutable 'reference' to a value, meaning that the variable references a value, that can be changed by this 'reference' to the value, but might be modified by another reference to
-- `immutable`: Similar to `const`, but no 'reference' to the value can change it
 
 .. code-block::
 
-    type-modifiers = 'const'
-                   | 'immutable'
+    type-modifiers = 'const';
 
 Function and method Attributes
 ------------------------------
