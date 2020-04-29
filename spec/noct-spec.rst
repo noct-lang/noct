@@ -529,8 +529,8 @@ Literals can be implicitly converted to corresponding types, below is a table of
  integer (unsigned suffix)   u32            u8, u16, u32, u64
  floating point              f64            f32, f64
  character                   char           none
- string                      StringView     none
- boolean                     b8             none
+ string                      []char         none
+ boolean                     bool           none
 =========================== ============== ======================================
 
 Qualified names
@@ -619,6 +619,10 @@ A floating-point type can store a number, which may contain a decimal point. All
 .. code-block::
 
     fp-type = 'f', ( '32 ' | '64' );
+
+.. note::
+
+    `f16` and `f128` will be added in the future
 
 Boolean types
 `````````````
