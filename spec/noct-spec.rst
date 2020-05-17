@@ -147,8 +147,8 @@ A keyword is a special `identifier`_, which has a specific meaning in the `noct`
 
 Below is a list of keywords::
 
+- as
 - break
-- cast
 - comptime
 - const
 - continue
@@ -222,7 +222,6 @@ Constant keywords
 Context dependent keywords
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- as
 - dynlib
 - package
 - Self
@@ -1757,7 +1756,13 @@ A cast expression converts a value from one type to another.
 
 .. code-block::
 
-    cast-expression = 'cast', '(', type, ')', operand;
+    cast-expression = simple-cast-expression
+                    | safe-cast-expression
+                    | null-panicing-cast-expression;
+
+    simple-cast-expression = operand, 'as', type;
+    safe-cast-expression = operand, 'as?', type;
+    null-panicing-cast-expression = operand, 'as!', type;
 
 Transmute expression
 --------------------
@@ -1766,7 +1771,7 @@ A transmute expression converts a value from one type to another, by the way of 
 
 .. code-block::
 
-    transmute-expression = 'transmute', '(', type, ')', operand;
+    transmute-expression = operand, 'transmute', type;
 
 Move expressions
 ----------------
@@ -2166,7 +2171,21 @@ A generic declaration defines what parameters the generic can use.
 There are 2 types of generic parameters that exists::
 
 - Type parameter: A type parameter can be used as a type inside of the generic and it can have a default type. In addition to this, a simple constraint can be added, by defining what interfaces the type should implement.
-- Value parameter
+- Value parameter; A value parameter is any value that can passed to a parameter of the value type.
+
+Allowed value parameter types:
+    - Reference
+    - Pointer
+    - Builtin integer type (signed and unsigned)
+    - value enum
+
+.. note::
+
+    Floating points types were deliberatly excluded, since these can cause issues when getting them as the result of a compile time function, caused by the characteristics of floating point math
+
+.. note::
+
+    Unless there is any need, other types will probably not be added to valid types for value generics
 
 .. code-block::
 
