@@ -46,7 +46,7 @@ IL has 2 representation:
 Binary code
 -----------
 
-This is what the compiler will generate and can reached.
+This is what the compiler will generate and can read.
 Binary code will have the extension: .nxil
 
 The binary code is not meant to be used separatly, but will be used either as part of a module file, or supplied with its associate module file as an optional file.
@@ -75,13 +75,13 @@ The IL header is a block of 32 bytes giving basic info about the IL bytecode
     |        Magic number (.NIL)        |  Ver.  |         Reserved         |                               File size                               |
     v                                   v        V                          v                                                                       v
     +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
-    |  0xFF  |  0x4E  |  0x49  |  0x4C  |  0x??  |  0x00  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
+    |  0xFF  |  0x4E  |  0x49  |  0x4C  |  0x??  |  0x00  |  0x00  |  0x00  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
     +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
     0                                   4        5                          8                                                                      16
 
     16                                                                     24                                                                      32
     +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
-    |  0xFF  |  0x4E  |  0x49  |  0x4C  |  0x??  |  0x00  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
+    |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
     +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
     ^                                                                       ^                                                                       ^
     |                            type table size                            |                            name table size                            |
@@ -128,18 +128,23 @@ Encoded variables
 =================
 
 Inside of an implementation, varaibles will be identified with a unique identifier, the width of this identifier will be decided by the IL flags.
-The first 2 bits of the identifier are special, the first bit indicates the value is moved, the second bit means a reference is taken. If none of these bits are set the value is moved
+The first 2 bits of the identifier are special, the first bit indicates the value is moved, the second bit means a reference is taken. If none of these bits are set the value is copied.
+The actual id is encoded with a variable length, with a single byte indicating whether an additional byte follows the current byte, the last (4th) byte, does not include this bit.
+
+When multiple bytes are used for a variable, the bytes are layed out in LE, so for a 4 byte encoding (the max encoding), the bits are layed as followed: (High bit) 333 33333222 22221111 11100000 (Low bit)
 
 .. code-block::
 
-    | mov | ref |              var id               |
-    V bit v bit v                                   v
-    +-----+-----+-----+-----+-----+-----+-----+-----+
-    |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |
-    +-----+-----+-----+-----+-----+-----+-----+-----+
-    0     1     2                                   8
+    | mov | ref | add |           var id            |  | add |                 var id                  |  | add |                 var id                  |  |                    var id                     | 
+    V bit v bit v byt v                             v  v byt v                                         v  v byt v                                         v  v                                               v 
+    +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+ 
+    |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  |  ?  | 
+    +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+  +-----+-----+-----+-----+-----+-----+-----+-----+ 
+    0     1     2     3                             8  8                                               16 16                                              24 24                                              32
 
 In case that both bits are set, the variable is a literal and follows the following encoding
+
+.. code-block::
 
     |  literal  |       lit type              | Bl. |  value   |
     V   bits    v                             v     v          v
@@ -148,9 +153,9 @@ In case that both bits are set, the variable is a literal and follows the follow
     +-----+-----+-----+-----+-----+-----+-----+-----+----------+
 
 
-======== ==== ========================
+======== ==== =============================
  Type     ID   Data bits
-======== ==== ========================
+======== ==== =============================
  bool     0    0, Stored in Bl. bit
  i8       1    1
  i16      2    2
@@ -165,9 +170,10 @@ In case that both bits are set, the variable is a literal and follows the follow
  f32      12   4
  f64      13   8
 
- char     15   4
- string   16   null-terminated string
-======== ==== ========================
+ char     15   UTF-8 character
+ string   16   null-terminated UTF-8 string
+ null     17   null value
+======== ==== =============================
 
 Functions and Methods
 =====================
@@ -176,19 +182,19 @@ Since the main purpose of the IL is to store the implementations of functions an
 
 .. code-block::
 
-    | def id |     mangled name id      |  num sub-statements/expressions   |                               Func size                               |
-    v        v                          v                                   v                                                                       v
-    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
-    |  0xF0  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
-    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
-    0        1                          4                                   8                                                                      16
+    | def id |     mangled name id      |  num sub-statements/expressions   |             Func size             |
+    v        v                          v                                   v                                   v
+    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+    |  0xF0  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
+    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+    0        1                          4                                   8                                  16
 
-    16                                 20                22                ?
-    +--------+--------+--------+--------+--------+--------+----------------+
-    |  0x00  |  0x??  |  0x??  |  0x??  |  0xF0  |  0x00  |                |
-    +--------+--------+--------+--------+--------+--------+----------------+ 
-    ^                                   ^                 ^                ^
-    |          total var count          |   local count   |   local types  |
+    20               22                ?                 ?                ?
+    +--------+--------+----------------+--------+--------+----------------+
+    |  0x??  |  0x??  |                |  0x??  |  0x??  |                |
+    +--------+--------+----------------+--------+--------+----------------+ 
+    ^                 ^                ^                 ^                ^
+    |   param count   |   param types  |   local count   |   local types  |
 
 
 
@@ -255,12 +261,12 @@ Loop statements
 
 .. code-block::
 
-    | def id |          label           |   num sub-statements/expressions  |
-    v        v                          v                                   v
-    +--------+--------+--------+--------+--------+--------+--------+--------+
-    |  0x04  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |
-    +--------+--------+--------+--------+--------+--------+--------+--------+
-    0        1                          4                                   8
+    | def id |       begin label        |       end label          |  res.  |   num sub-statements/expressions  |
+    v        v                          v                          v        v                                   v
+    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+    |  0x04  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |  0x00  |  0x??  |  0x??  |  0x??  |  0x??  |
+    +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+    0        1                          4                          7        8                                  12
 
 `label` is a null terminated string
 
@@ -330,20 +336,6 @@ With value
     v        v                v
     +--------+----------------+
     |  0x0B  |                |
-    +--------+----------------+
-    0        1                ?
-
-Block return statements
------------------------
-
-Encoding
-````````
-.. code-block::
-
-    | def id |     ret var    |
-    v        v                v
-    +--------+----------------+
-    |  0x0C  |                |
     +--------+----------------+
     0        1                ?
 
@@ -570,12 +562,12 @@ With return:
 
 .. code-block::
 
-    | def id |   arg  |             func name             |    dst var     |    dst type    |      args      |
-    v        v  count v                                   v                v                v                v
+    | def id |             func name             |   arg  |    dst var     |    dst type    |      args      |
+    v        v                                   v  count v                v                v                v
     +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+
     |  0x51  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |                |                |                |
     +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+
-    0        1        2                                   6                ?                ?                ?
+    0        1                                   6        2                ?                ?                ?
 
 Method
 ``````
@@ -587,52 +579,23 @@ Without return:
 
 .. code-block::
 
-    | def id |   arg  |             func name             |     caller     |      args      |
-    v        v  count v                                   v                v                v
+    | def id |             func name             |   arg  |     caller     |      args      |
+    v        v                                   v  count v                v                v
     +--------+--------+--------+--------+--------+--------+----------------+----------------+
     |  0x52  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |                |                |
     +--------+--------+--------+--------+--------+--------+----------------+----------------+
-    0        1        2                                   6                ?                ?
+    0        1                                   5        6                ?                ?
 
 With return:
 
 .. code-block::
 
-    | def id |   arg  |             func name             |    dst var     |    dst type    |     caller     |      args      |
-    v        v  count v                                   v                v                v                v                v
+    | def id |             func name             |   arg  |    dst var     |    dst type    |     caller     |      args      |
+    v        v                                   v  count v                v                v                v                v
     +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+----------------+
     |  0x53  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |                |                |                |                |
     +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+----------------+
-    0        1        2                                   6                ?                ?                ?                ?
-
-Call operator
-`````````````
-
-Encoding
-^^^^^^^^
-
-Without return:
-
-.. code-block::
-
-    | def id |   arg  |    call obj    |      args      |
-    v        v  count v                v                v
-    +--------+--------+----------------+----------------+
-    |  0x52  |  0x??  |                |                |
-    +--------+--------+----------------+----------------+
-    0        1        2                ?                ?
-
-With return:
-
-.. code-block::
-
-    | def id |   arg  |    dst var     |    dst type    |    call obj    |   arg  |      args      |
-    v        v  count v                v                v                v  count v                v
-    +--------+--------+----------------+----------------+----------------+--------+----------------+
-    |  0x53  |  0x??  |                |                |                |  0x??  |                |
-    +--------+--------+----------------+----------------+----------------+--------+----------------+
-    0        1        2                ?                ?                ?        ?                ?
-
+    0        1                                   5        6                ?                ?                ?                ?
 
 Member Access
 -------------
@@ -642,12 +605,12 @@ Encoding
 
 .. code-block::
 
-    | def id |    dst var     |    dst type    |    src var     |  member name   |
-    v        v                v                v                v                v
-    +--------+----------------+----------------+----------------+----------------+
-    |  0x56  |                |                |                |                |
-    +--------+----------------+----------------+----------------+----------------+
-    0        1                ?                ?                ?                ?
+    | def id |            member name            |    dst var     |    dst type    |    src var     |
+    v        v                                   v                v                v                v
+    +--------+--------+--------+--------+--------+----------------+----------------+----------------+
+    |  0x54  |  0x??  |  0x??  |  0x??  |  0x??  |                |                |                |
+    +--------+--------+--------+--------+--------+----------------+----------------+----------------+
+    0        1                                   5                ?                ?                ?
 
 Tuple Access
 ------------
@@ -660,10 +623,9 @@ Encoding
     | def id |      index      |    dst var     |    dst type    |    src var     |
     v        v                 v                v                v                v
     +--------+--------+--------+----------------+----------------+----------------+
-    |  0x57  |  0x??  |  0x??  |                |                |                |
+    |  0x55  |  0x??  |  0x??  |                |                |                |
     +--------+--------+--------+----------------+----------------+----------------+
     0        1                 3                ?                ?                ?
-
 
 
 Aggr init
@@ -692,12 +654,12 @@ Encoding
 
 .. code-block::
 
-    | def id |    dst var     |      type      |  member name   | 
-    v        v                v                v                v 
-    +--------+----------------+----------------+----------------+
-    |  0x61  |                |                |                | 
-    +--------+----------------+----------------+----------------+
-    0        1                ?                ?                ? 
+    | def id |            member name            |    dst var     |      type      | 
+    v        v                                   v                v                v 
+    +--------+--------+--------+--------+--------+----------------+----------------+
+    |  0x61  |  0x??  |  0x??  |  0x??  |  0x??  |                |                | 
+    +--------+--------+--------+--------+--------+----------------+----------------+
+    0        1                                   5                ?                ? 
 
 Adt enum init
 -------------
@@ -707,12 +669,12 @@ Encoding
 
 .. code-block::
 
-    | def id |   arg  |    dst var     |      type      |  member name   |      args      | 
-    v        v  count v                v                v                v                v 
-    +--------+--------+----------------+----------------+----------------+----------------+
-    |  0x62  |  0x??  |                |                |                |                | 
-    +--------+--------+----------------+----------------+----------------+----------------+
-    0        1        2                ?                ?                ?                ? 
+    | def id |            member name            |  arg   |    dst var     |      type      |      args      | 
+    v        v                                   v  count v                v                v                v 
+    +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+
+    |  0x62  |  0x??  |  0x??  |  0x??  |  0x??  |  0x??  |                |                |                | 
+    +--------+--------+--------+--------+--------+--------+----------------+----------------+----------------+
+    0        1                                   5        2                ?                ?                ? 
 
 tuple init
 ----------
@@ -722,7 +684,7 @@ Encoding
 
 .. code-block::
 
-    | def id |   arg  |    dst var     |      type      |      args      | 
+    | def id |  arg   |    dst var     |      type      |      args      | 
     v        v  count v                v                v                v 
     +--------+--------+----------------+----------------+----------------+
     |  0x63  |  0x??  |                |                |                | 
@@ -737,7 +699,7 @@ Encoding
 
 .. code-block::
 
-    | def id |   arg  |    dst var     |      type      |      args      | 
+    | def id |  arg   |    dst var     |      type      |      args      | 
     v        v  count v                v                v                v 
     +--------+--------+----------------+----------------+----------------+
     |  0x64  |  0x??  |                |                |                | 
