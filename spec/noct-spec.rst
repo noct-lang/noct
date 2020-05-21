@@ -728,17 +728,13 @@ A structure declaration defines a new user declared struct.
 There are 2 possible 'types' of structs:
 
 - Named struct: A struct declared with an name, this is the default type of struct
-- Anonymous struct: A struct declared without a name, this can only be used in certain places.
 - Inline struct: A struct, which' type is not accessible, but the variable being assigned that type can still access the members of it.
 
 A structure can be defined using a struct declaration:
 
 .. code-block::
 
-    struct-decl = { struct-attribute }, struct, identifier, [generic-decl], '{', { struct-statement }, '}';
-    anon-struct-decl = { struct-attribute }, struct, '{', [ struct-statement, ',', { struct-statement }], '}';
-    inline-struct-type = struct, '{', [ typed-var-decl, ',', { typed-var-decl }], '}';
-    struct-statement = typed-var-decl  | anon-union-decl;
+    struct-decl = { struct-attribute }, struct, identifier, [generic-decl], '{', { typed-var-decl }, '}';
 
 
 It should be noted that struct may not contain a variable with the struct as its type, or with a type, that includes the current type, since this would create a circular dependency, resulting in a struct that would be infinite in size. If the struct needs to be self referential, the use of a pointer or a reference should be used.
@@ -774,9 +770,7 @@ A union can be defined using a struct declaration:
 
 .. code-block::
 
-    union-decl = { union-attribute }, 'union', identifier, [generic-decl], '{', { union-statement }, '}';
-    anon-union-decl = { union-attribute }, 'union', '{', union-statement, { ',', union-statement }, '}';
-    union-statement = typed-var-decl | anon-struct-decl;
+    union-decl = { union-attribute }, 'union', identifier, [generic-decl], '{', { typed-var-decl }, '}';
 
 It should be noted, that even when all members overlap the same memory, a union may not contain a variable with the union as its type, or with a type, that includes the union type, since this would create a circular dependency, while not creating union with an infinite size, unlike a struct, this is a bad practice and will therefore count as an error. If the struct needs to be self referential, the use of a pointer or a reference should be used.
 
