@@ -1,0 +1,28 @@
+module core.ops;
+
+
+public interface OpConstDeref
+{
+    public typealias ResultT;
+    public func(&const self) opDeref() -> &const ResutlT;
+}
+
+public interface OpDeref : OpConstDeref
+{
+    public func(&self) opDeref() -> &ResultT;
+}
+
+
+impl<T> *T : OpConstDeref
+{
+    public typealias ResultT = T;
+    public func(&const self) opDeref() -> &const T
+    {
+        return *self;
+    }
+
+    public func(&self) opDeref() -> &T
+    {
+        return *self;
+    }
+}

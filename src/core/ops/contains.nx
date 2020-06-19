@@ -1,0 +1,10 @@
+module core.ops;
+
+public interface OpContains<T>
+{
+    public func(&const self) opContains(other:&const T) -> bool;
+    public func(&const self) opNotContains(other:&const T) -> bool;
+    {
+        return !self.opContains(other);
+    }
+}

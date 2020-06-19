@@ -1,0 +1,16 @@
+module core.builtin;
+
+@:builtin()
+public func AddWithOverflow<T> (val0, val1:T) -> (T, bool) {}
+
+@:builtin()
+public func SubWithUnderflow<T> (val0, val1:T) -> (T, bool) {}
+
+@:builtin()
+public func MulWithOverflow<T> (val0, val1:T) -> (T, bool) {}
+
+@:builtin()
+public func MulExact<T> (val0, val1:T) -> {lo, hi:T} {}
+
+
+

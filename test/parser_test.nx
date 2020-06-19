@@ -158,8 +158,10 @@ func FuncName()
     aggr.NoArgMethod();
     aggr.Method(true, false);
     tup.4;
-    cast(u32) i;
-    transmute(f32) i;
+    i as u32;
+    i as? u32;
+    i as! u32;
+    i transmute f32;
     move m;
     a := { return i; };
     b := unsafe true;
@@ -207,7 +209,7 @@ macro func RulesDeclMacroName(ToksName)
 
 }
 
-#benchmark "bench name"(state)
+#benchmark "bench name"
 {
 
 }

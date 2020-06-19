@@ -1,0 +1,7 @@
+module core.iterator;
+import core.ops;
+
+public interface Iterator<T> : OpDeref
+{
+    func Next() -> Iterator;
+}

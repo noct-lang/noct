@@ -1,0 +1,3 @@
+module core.attribute;
+
+public interface UserAttribute;

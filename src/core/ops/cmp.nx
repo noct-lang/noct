@@ -1,0 +1,35 @@
+module core.ops;
+
+public interface OpPartialEq<T>
+{
+    public func(&const self) opEq(other:&const T) -> bool;
+    public func(&const self) opNe(other:&const T) -> bool;
+}
+
+public enum Ordering : u8
+{
+    Less,
+    Equal,
+    Greater
+}
+
+public interface OpPartialOrd<T>
+{
+    public func(&const self) opCmp(other:&const T) -> Ordering;
+}
+
+public interface OpEq<T> : OpPartialEq<T>
+{
+    public func(&const self) opNe(other:&const T) -> bool
+    {
+        return !self.opEq(other);
+    }
+}
+
+public interface OpOrd<T> : OpEq<T> + OpPartialOrd<T>
+{
+    public func(&const self) opEq(other:&const T)
+    {
+        return self.opCmp(other) == Ordering::Equal;
+    }
+}

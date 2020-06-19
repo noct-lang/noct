@@ -1,0 +1,6 @@
+module core.intrin;
+
+
+
+@:intrin("vadd")
+public func VAdd(val0, val1:f32x4) -> f32x4 {}

@@ -212,6 +212,30 @@ Type keywords
 - u64
 - u128
 
+Reserved type keywords
+``````````````````````
+
+Keywords type reserved for future use::
+
+- i8x8
+- i8x16
+- i16x4
+- i16x8
+- i32x2
+- i32x4
+- u8x16
+- u16x8
+- u32x4
+- f32x4
+- f32x8
+- f64x2
+- f64x4
+
+- bx64
+- bx128
+- bx256
+- bx512
+
 Constant keywords
 ^^^^^^^^^^^^^^^^^
 
@@ -914,19 +938,19 @@ A typedef is similar to a type alias, but it creates a type that is distinct to 
 Function types
 --------------
 
-A function type defines which type a function has, but is itself not a function, but defines the parameters that are that are taken and the type that gets returned. A method is a function, but which takes the receiver as it's first argument.
+A function type, itself is not a function, but defines the parameters that are that are taken and the type that gets returned. A method is a function, but which takes the receiver as it's first argument.
 
-The last parameter is a variadic parameter which can take a 0 or more arguments. If a type is supplied, all variadic parameters will be of that type.
+The last parameter is a variadic parameter which can take a 0 or more arguments. If a type is supplied, all variadic parameters will be of that type, otherwise they will be an any type.
 
-A function type can actually 3 different types of functions: free functions, methods and closures.
+A function type can represent 3 different types of functions: free functions, methods and closures.
 
-Each parameter can also have a parameter label, which is an identifier followed by '=>' before the varaible name. If this label is supplied, this is the name that will be used for function overloading. see `Function overloading`_
+Each parameter can also have a parameter label, which is an identifier followed by '=>' before the variable name. If this label is supplied, this is the name that will be used for function overloading. see `Function overloading`_
 
 .. code-block::
 
     func-type = 'func', func-signature;
     func-signature = '(', [ parameters, { ',', parameters } ], [ variadic-parameter ] ')', [ func-throws ], [ '->', ret-type |  ]
-    func-named-ret = '(', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, ')';
+    func-named-ret = '((', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, '))';
     parameters = parameter-identifier-list, ':', type;
     parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
     parameter-identifier = { func-param-attribute }, [ identifier, '=>' ], identifier;
@@ -1048,7 +1072,7 @@ Function declarations
 Function overloading
 ^^^^^^^^^^^^^^^^^^^^
 
-Function overloading in Noct works differently to most languages, instead of overloads being differentiated by the types of the parameters, they are differentiated by the name of the parameters..
+Function overloading in Noct works differently to most languages, instead of overloads being differentiated by the types of the parameters, they are differentiated by the name of the parameters.
 
 .. code-block::
 
@@ -1315,11 +1339,82 @@ Conditional compilation statements
 ``````````````````````````````````
 
 A conditional compilation statement is a statement where the body will only be executed when certain compile conditions are met.
+There is a distinguishment between 2 types of the statements::
+
+    - conditional: always passes when condition is met
+    - debug: only passes if condition passes and compiled using debug
+
+Each condition exists out of 2 main parts::
+
+    - Feature set: a feature set contains multiple features, it can either exist or not. The set does not require a feature in it to exist.
+    - Feature: a feature is an element of each feature set, and unlike a set, they can be assigned a numeric value or a version triplet.
 
 .. code-block::
 
-    cond-comp-statement = ( '#conditional' | '#debug' ), ' identifier, [ cond-cmp, int-lit ], block-statement, [ 'else', ( cond-comp-statement | block-statement ) ];
+    cond-comp-statement = ( '#conditional' | '#debug' ), ' identifier, [ cond-cmp, int-lit ], cond-expression, [ 'else', ( cond-comp-statement | block-statement ) ];
+
+    cond-expression = cond-sub-expression
+                    | cond-multi-expression, { ( '||' | '&&' ), cond-multi-expression };
+    cond-group-expression = cond-expression
+                          | '(', cond-expression, ')';
+    cond-sub-expression = '!', cond-feature
+                        | cond-feature, cond-cmp, ( int-lit | version-triplet );
+    cond-feature = identifier, '(', [string-lit], ')';
+    version-triplet = int-lit, '.', int-lit, '.', int-lit
+                    | int-lit, '.', int-lit, '.', '*'
+                    | int-lit, '.', '*', '.', '*';
     cond-cmp = '==' | '!=' | '<' | '<=' | '>' '>=';
+
+
+There are a couple of default feature sets that are always available and cannot be modified.
+
+Arch
+^^^^
+
+The `arch` feature set contains info about the architecture being built on and consists of 2 types of features.
+
+the first type determins the architecture of the machine::
+
+    - x86
+    - x86_64
+    - arm
+    - aarch64
+
+The second type contains features that the architecture can support. 
+For x86 and x86_64, these are represented by their CPUID name, e.g. 'avx', 'sse3'.
+For arm and aarch64, these are represented by the values stored in the CPUID register.
+
+OS
+^^
+
+The `os` feature set contains info about the os being used.
+
+    - windows
+    - linux
+    - android
+    - macos
+    - ios
+
+OS family
+^^^^^^^^^
+
+The `os_family` feature set contains info about the os family being used.
+
+    - interp
+    - windows
+    - unix
+
+In addition, these also have their own features sets: 'windows()' and 'unix()' respectivly.
+
+Vendor
+^^^^^
+
+The 'vendor' feature set contains info about the device vendor being used.
+
+    - apple
+    - pc
+    - unknown
+
 
 Error handler statement
 -----------------------
@@ -1343,12 +1438,12 @@ The `std.unittest` module is required to run a benchmark.
 Benchmark statements
 --------------------
 
-A benchmark statement allows the user to run a benchmark. A context is provided to allow the user to pause and resume the benchmark, and to know how long the benchmark needs to keep running. 
+A benchmark statement allows the user to run a benchmark. A context, as an implicit 'self', is provided to allow the user to pause and resume the benchmark, and to know how long the benchmark needs to keep running. 
 The `std.bench` module is required to run a benchmark.
 
 .. code-block::
 
-    benchmark-statement = '#benchmark', string-lit, '(', identifier ')', '{', { statement }, '}';
+    benchmark-statement = '#benchmark', string-lit , '{', { statement }, '}';
 
 Expressions
 ===========
@@ -1623,11 +1718,15 @@ Function call expressions
 -------------------------
 
 A function call is an expression that can generate an expression, based upon the arguments passed to the function being called. It can only be used as an operand for another expression, if the function being called, returns a value. Each argument passed to the function, can be prefixed by the name of the parameter, which will than be passed as the value for that parameter.
+Even when named paramters are used, they are required to be in the same order as they were declared in the function.
+As mentioned in `Function overloading`, when calling a function that is overloaded, the names of the parameters need to be supplied, the name of parameters is optional if no overloads exist, but when a named argument is used, all arguments need to be named.
 
 .. code-block::
 
     func-call = qualified-name, '(', [ argument, { ',' argument } ], ')';
-    argument = [ identifier, ':', ], expression;
+    argument = named-argument | expression;
+    named-argument = identifier, ':', expression;
+    named-variadic-argument = identifier, ':', expression, { ',', expression }
 
 Member access expressions
 -------------------------
@@ -1691,18 +1790,24 @@ Struct initialize expressions
 
 An aggregate initialize expressions is create a new instance of a struct with each member being assigned a specific value. Each member is required to be initialized.
 
+When at least 1 named argument is used, all arguments need to be named.
+
+At the end of the arguments list, a '..' may be added, this tells the compiler to assign a default value to all uninitialized variables. 
+In the case where an expression follows '..', the expression needs to be the same type as the structure being initialized (can also be a reference to the type), and all uninitialized variables will have the value of that variable in the expression assigned to them.
+
 .. code-block::
 
-    struct-init = qualified-name, '{', [ argument, { ',', argument } ], '}';
+    struct-init = qualified-name, '{', [ argument, { ',', argument } ], [ [ ',' ], '..', [expression] ], '}';
 
 Union initializer
 `````````````````
 
 A union initialize expressions is create a new instance of a union where exactly one member of the union is assigned, if it happens that the specific member being initialize contains multiple values, all values in that member need to be initialized.
+All arguments need to be named arguments.
 
 .. code-block::
 
-    union-init = qualified-name, '{', [ argument, { ',', argument } ], '}';
+    union-init = qualified-name, '{', [ named-argument, { ',', named-argument } ], '}';
 
 Enum initializer
 ````````````````
@@ -1714,7 +1819,7 @@ An enum initialize expressions is create a new instance of a enum, how the enum 
     enum-init = value-enum-member-init | tuple-enum-member-init | struct-enum-member-init;
     value-enum-member-init = qualified-name;
     tuple-enum-member-init = qualified-name, '(', expression, { ',', expression }, ')'; 
-    struct-enum-member-init = qualified-name, '{' argument, { ',', argument }, '}';
+    struct-enum-member-init = qualified-name, '{' argument, { ',', argument }, [ [ ',' ], '..', [expression] ], '}';
 
 Tuple initializer
 `````````````````

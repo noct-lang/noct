@@ -1,0 +1,25 @@
+module core.ops;
+
+public interface OpIndex<T>()
+{
+    public typealias ResultT;
+    public func(&const self) opIndex(idx:&const T) -> &const ResultT;
+    public func(&self) opIndex(idx:&const T) -> & ResultT;
+}
+
+public interface OpSlice()
+{
+
+}
+
+
+impl<T,N:usize> [N]T : OpIndex<usize>
+{
+    public typealias ResultT = T;
+
+    public func(&const self) opIndex(idx:&const usize) -> &const T
+    {
+        Assert(idx < N);
+        return self[idx];
+    }
+}

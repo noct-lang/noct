@@ -1,0 +1,4 @@
+module std.ops;
+
+// Publicly import core.ops and export is as if it were part of the std.ops module
+public import core.ops as std.ops;

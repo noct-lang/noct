@@ -1,0 +1,9 @@
+module core.result;
+
+import core.error;
+
+public enum Result<T,E is Error>
+{
+    Valid(T),
+    Err(E)
+}

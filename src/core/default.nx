@@ -1,0 +1,6 @@
+module core.default;
+
+public interface Default
+{
+    public func Default() -> Self;
+}

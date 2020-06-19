@@ -1,0 +1,69 @@
+module core.convert;
+
+import core.error;
+import core.result;
+
+// TODO: should also automatically implement To<T> as:
+//
+// public func(&const self) To() -> T
+// {
+//      return <T as From<Self>>::From(self);
+// }
+//
+public interface From<T>
+{
+    public func From(val:&const T) -> Self;
+}
+
+// TODO: should also automatically implement TryTo<T>
+//
+// public func TryFrom(val:&const T) -> Result<Self, Error>
+// {
+//      return <T as From<Self>>::TryFrom(self);
+// }
+//
+public interface TryFrom<T>
+{
+    public func TryFrom(val:&const T) -> Result<Self, Error>;
+}
+
+public interface To<T>
+{
+    public func(&const self) To() -> T;
+}
+
+public interface TryTo<T>
+{
+    public func(&const self) TryTo() -> Result<T, Error>;
+}
+
+
+macro ImplConv($ty:type, $($fromTy:type)*)
+{
+    ${
+        impl $ty : From<$fromTy>
+        {
+            public func From(val:&const $fromTy) -> $ty
+            {
+                return val as $ty;
+            }
+        }
+    }
+}
+
+ImplConv!{ i8   , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ i16  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ i32  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ i64  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ i128 , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ isize, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ u8   , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ u16  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ u32  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ u64  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ u128 , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ usize, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ f16  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ f32  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ f64  , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplConv!{ f128 , i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }

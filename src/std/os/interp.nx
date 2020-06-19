@@ -1,0 +1,9 @@
+module std.os;
+
+//#conditional(os("inter"))
+//{
+//    
+//}
+
+@interp_func()
+func WriteConsole(text:[]char);
