@@ -1,10 +1,7 @@
 module core.ops;
 
-public interface OpPartialEq<T>
-{
-    public func(&const self) opEq(other:&const T) -> bool;
-    public func(&const self) opNe(other:&const T) -> bool;
-}
+// tmp
+import core.marker;
 
 public enum Ordering : u8
 {
@@ -13,14 +10,40 @@ public enum Ordering : u8
     Greater
 }
 
+public interface OpPartialEq<T>
+{
+    public func(&self) opEq(other:& T) -> bool;
+    public func(&self) opNe(other:& T) -> bool;
+}
+
 public interface OpPartialOrd<T>
 {
-    public func(&const self) opCmp(other:&const T) -> Ordering;
+    public func(&self) opCmp(other:&T) -> Ordering;
+
+    public func(&self) opLt(other:&T) -> bool
+    {
+        return self.opCmp(other) == Ordering::Less;
+    }
+
+    public func(&self) opLe(other:&T) -> bool
+    {
+        return self.opCmp(other) != Ordering::Greater;
+    }
+
+    public func(&self) opGt(other:&T) -> bool
+    {
+        return self.opCmp(other) == Ordering::Greater;
+    }
+
+    public func(&self) opGe(other:&T) -> bool
+    {
+        return self.opCmp(other) != Ordering::Less;
+    }
 }
 
 public interface OpEq<T> : OpPartialEq<T>
 {
-    public func(&const self) opNe(other:&const T) -> bool
+    public func(&self) opNe(other:&T) -> bool
     {
         return !self.opEq(other);
     }
@@ -28,8 +51,79 @@ public interface OpEq<T> : OpPartialEq<T>
 
 public interface OpOrd<T> : OpEq<T> + OpPartialOrd<T>
 {
-    public func(&const self) opEq(other:&const T)
+    public func(&self) opEq(other:&T)
     {
         return self.opCmp(other) == Ordering::Equal;
     }
 }
+
+
+
+impl<T> T : OpEq where T is core::marker::ValEnum
+{
+    func(&self) opEq(other:&T) -> bool
+    {
+        return self == other;
+    }
+
+    public func(&self) opNe(other:&T) -> bool
+    {
+        return self != other;
+    }
+}
+
+
+macro ImplFullOrd($($ty:type)*)
+{
+    ${
+        impl $ty : OpOrd<$ty>
+        {
+            func(&self) opCmp(other:$ty) -> Ordering
+            {
+                if self < other
+                {
+                    return Ordering::Less;
+                }
+                if self > other
+                {
+                    return Ordering::Greater;
+                }
+                return Ordering::Equal;
+            }
+        }
+    }
+}
+ImplFullOrd!{ i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize char bool }
+
+
+macro ImplPartialOrd($($ty:type)*)
+{
+    ${
+        impl $ty : OpPartialOrd<$ty>
+        {
+            func (&self) opCmp(other:$ty) -> Ordering
+            {
+                if self < other
+                {
+                    return Ordering::Less;
+                }
+                if self > other
+                {
+                    return Ordering::Greater;
+                }
+                return Ordering::Equal;
+            }
+
+            func (&self) opEq(other:$ty)
+            {
+                return self == other;
+            }
+
+            func (&self) opNe(other:$ty)
+            {
+                return self != other;
+            }
+        }
+    }
+}
+ImplPartialOrd!{ f16 f32 f64 f128 }

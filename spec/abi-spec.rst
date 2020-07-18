@@ -91,8 +91,8 @@ A mangled method represents any possible method, but has 2 types:
 
     type = [type-mod], sub-type;
 
-    type-mod = const-type-mod;
-    const-type-mod = 'C';
+    type-mod = mut-type-mod;
+    mut-type-mod = 'M';
 
 
     sub-type = builtin-type
@@ -103,7 +103,8 @@ A mangled method represents any possible method, but has 2 types:
              | slice-type
              | opt-type
              | tup-type
-             | func-type;
+             | func-type
+             | gen-type;
 
 
 
@@ -153,6 +154,7 @@ A mangled method represents any possible method, but has 2 types:
     opt-type = 'O', type;
     tup-type = 'T', { type }, 'Z';
     func-type = 'F', { type }, 'Z', [type], 'Z';
+    gen-type = 'H', qual-name;
 
 
 

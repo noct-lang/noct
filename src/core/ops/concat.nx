@@ -3,5 +3,5 @@ module core.ops;
 public interface OpConcat<T>
 {
     public typealias ResultT;
-    public func(&const self) opConcat(other:&const T) -> ResultT;
+    public func(&self) opConcat(other:&T) -> ResultT;
 }

@@ -1,0 +1,11 @@
+module core.marker;
+
+public interface Struct;
+public interface Union;
+public interface ValEnum;
+public interface AdtEnum;
+public interface StrongInterface;
+public interface WeakInterface;
+public interface MarkerInterface;
+public interface Typealias;
+public interface Typedef;

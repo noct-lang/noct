@@ -1,27 +1,27 @@
 module core.ops;
 
 
-public interface OpConstDeref
+public interface OpDeref
 {
     public typealias ResultT;
-    public func(&const self) opDeref() -> &const ResutlT;
-}
-
-public interface OpDeref : OpConstDeref
-{
     public func(&self) opDeref() -> &ResultT;
 }
 
+public interface OpMutDeref : OpDeref
+{
+    public func(&mut self) opMutDeref() -> &mut ResultT;
+}
 
-impl<T> *T : OpConstDeref
+
+impl<T> *T : OpMutDeref
 {
     public typealias ResultT = T;
-    public func(&const self) opDeref() -> &const T
+    public func(&self) opDeref() -> &T
     {
         return *self;
     }
 
-    public func(&self) opDeref() -> &T
+    public func(&mut self) opMutDeref() -> &mut T
     {
         return *self;
     }

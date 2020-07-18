@@ -175,6 +175,7 @@ Below is a list of keywords::
 - macro
 - module
 - move
+- mut
 - public
 - return
 - static
@@ -885,6 +886,7 @@ Marker interfaces
 `````````````````
 
 A marker interface is the simplest type of interface, since it just marks a type, because of this, they cannot have any members.
+Markers are also only attached to the object or interface that implements them and are not propagated when implementing interfaces.
 
 .. code-block::
 
@@ -1108,7 +1110,7 @@ Method declarations
     method-decl = normal-method-decl | empty-method-decl;
     normal-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
     empty-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, ';';
-    method-receiver = '(', [ '&', [ 'const' ] ], 'self', ')';
+    method-receiver = '(', [ '&', [ 'mut' ] ], 'self', ')';
 
 Implementation declaration
 ``````````````````````````
@@ -1117,7 +1119,7 @@ An implementation declaration allows methods and specific members to be implemen
 
 .. code-block::
 
-    impl-decl = 'impl', generic-decl, type, [ ':', type ], '{', { statement }, '}';
+    impl-decl = 'impl', generic-decl, type, [ ':', type ], [ where-clause ], '{', { statement }, '}';
 
 Block statement
 ---------------
@@ -1689,7 +1691,7 @@ Auto referncing will only happen in very specific cases:
 - On any literal
 
 Auto-referencing can happen for the following expressions:
-- Operators: since they work on references to const types
+- Operators: since they work on references to (non-mutable) types
 - Method calls (caller/receiver): When a method is called, which takes in the caller as a reference, automatic referencing on that caller
 
 
@@ -2195,11 +2197,11 @@ Type Attributes
 
 A type modifiers changes the meaning of how the type stores a value.
 
-- `const`: A const type is an immutable 'reference' to a value, meaning that the variable references a value, that can be changed by this 'reference' to the value, but might be modified by another reference to
+- `mut`: a mut type is a mutable 'reference' to a value, meaning that the variable referencing this value, can changed by using this 'reference'
 
 .. code-block::
 
-    type-modifiers = 'const';
+    type-modifiers = 'mut';
 
 Function and method Attributes
 ------------------------------
@@ -2280,7 +2282,7 @@ Allowed value parameter types:
 
 .. note::
 
-    Floating points types were deliberatly excluded, since these can cause issues when getting them as the result of a compile time function, caused by the characteristics of floating point math
+    Floating points types were deliberately excluded, since these can cause issues when getting them as the result of a compile time function, caused by the characteristics of floating point math
 
 .. note::
 

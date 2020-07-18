@@ -9,7 +9,7 @@ macro ImplBinaryOp($interfaceName:iden, $funcName:iden, $op:toks, $($ty:type)*)
         impl $ty : $interfaceName<$ty>
         {
             public typealias ResultT = $ty;
-            public func(&const self) $funcName(other: &const $ty) -> ResultT
+            public func(&self) $funcName(other: &$ty) -> ResultT
             {
                 return self $op other;
             }
@@ -20,35 +20,35 @@ macro ImplBinaryOp($interfaceName:iden, $funcName:iden, $op:toks, $($ty:type)*)
 public interface OpAdd<T>
 {
     public typealias ResultT;
-    public func(&const self) opAdd(other: &const T) -> ResultT;
+    public func(&self) opAdd(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpAdd, opAdd, +, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpSub<T>
 {
     public typealias ResultT;
-    public func(&const self) opSub(other: &const T) -> ResultT;
+    public func(&self) opSub(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpSub, opSub, -, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpMul<T>
 {
     public typealias ResultT;
-    public func(&const self) opMul(other: &const T) -> ResultT;
+    public func(&self) opMul(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpMul, opMul, *, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpDiv<T>
 {
     public typealias ResultT;
-    public func(&const self) opDiv(other: &const T) -> ResultT;
+    public func(&self) opDiv(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpDiv, opDiv, /, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpRem<T>
 {
     public typealias ResultT;
-    public func(&const self) opRem(other: &const T) -> ResultT;
+    public func(&self) opRem(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpRem, opRem, %, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
@@ -57,63 +57,63 @@ ImplBinaryOp!{ OpRem, opRem, %, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 us
 public interface OpShl<T>
 {
     public typealias ResultT;
-    public func(&const self) opShl(other: &const T) -> ResultT;
+    public func(&self) opShl(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpShl, opShl, <<, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpShr<T>
 {
     public typealias ResultT;
-    public func(&const self) opShr(other: &const T) -> ResultT;
+    public func(&self) opShr(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpShr, opShr, >>, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpAShl<T>
 {
     public typealias ResultT;
-    public func(&const self) opAShl(other: &const T) -> ResultT;
+    public func(&self) opAShl(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpAShl, opAShl, <<<, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpAShr<T>
 {
     public typealias ResultT;
-    public func(&const self) opAShr(other: &const T) -> ResultT;
+    public func(&self) opAShr(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpAShr, opAShr, >>>, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpRotl<T>
 {
     public typealias ResultT;
-    public func(&const self) opRotl(other: &const T) -> ResultT;
+    public func(&self) opRotl(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpRotl, opRotl, <<*, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpRotr<T>
 {
     public typealias ResultT;
-    public func(&const self) opRotr(other: &const T) -> ResultT;
+    public func(&self) opRotr(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpRotr, opRotr, >>*, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinOr<T>
 {
     public typealias ResultT;
-    public func(&const self) opBinOr(other: &const T) -> ResultT;
+    public func(&self) opBinOr(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpBinOr, opBinOr, |, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinXor<T>
 {
     public typealias ResultT;
-    public func(&const self) opBinXor(other: &const T) -> ResultT;
+    public func(&self) opBinXor(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpBinXor, opBinXor, ^, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinAnd<T>
 {
     public typealias ResultT;
-    public func(&const self) opBinAnd(other: &const T) -> ResultT;
+    public func(&self) opBinAnd(other: &T) -> ResultT;
 }
 ImplBinaryOp!{ OpBinAnd, opBinAnd, &, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
@@ -125,7 +125,7 @@ macro ImplUnaryOp($interfaceName:iden, $methodName:iden, $op:toks, $($ty:type)*)
         impl $ty : $interfaceName
         {
             public typealias ResultT = $ty;
-            public func(&const self) $methodName() -> ResultT
+            public func(&self) $methodName() -> ResultT
             {
                 return $op self;
             }
@@ -136,17 +136,30 @@ macro ImplUnaryOp($interfaceName:iden, $methodName:iden, $op:toks, $($ty:type)*)
 public interface OpPos
 {
     public typealias ResultT;
-    public func(&const self) opPos() -> ResultT;
+    public func(&self) opPos() -> ResultT;
 }
 ImplUnaryOp!{ OpPos, opPos, +, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpNeg
 {
     public typealias ResultT;
-    public func(&const self) opNeg() -> ResultT;
+    public func(&self) opNeg() -> ResultT;
 }
-ImplUnaryOp!{ OpNeg, opNeg, +, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
+ImplUnaryOp!{ OpNeg, opNeg, -, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
+public interface OpNot
+{
+    public typealias ResultT;
+    public func(&self) opNot() -> ResultT;
+}
+ImplUnaryOp!{ OpNot, opNot, !, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize bool }
+
+public interface OpBinNeg
+{
+    public typealias ResultT;
+    public func(&self) opBinNeg() -> ResultT;
+}
+ImplUnaryOp!{ OpBinNeg, opBinNeg, ~, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 macro ImplMutatingUnaryOp($interfaceName:iden, $methodName:iden, $op:toks, $($ty:type)*)
 {
@@ -154,7 +167,7 @@ macro ImplMutatingUnaryOp($interfaceName:iden, $methodName:iden, $op:toks, $($ty
         impl $ty : $interfaceName
         {
             public typealias ResultT = $ty;
-            public func(&self) $methodName() -> &ResultT
+            public func(&mut self) $methodName() -> &ResultT
             {
                 return $op self;
             }
@@ -165,14 +178,14 @@ macro ImplMutatingUnaryOp($interfaceName:iden, $methodName:iden, $op:toks, $($ty
 public interface OpInc
 {
     public typealias ResultT;
-    public func(&self) opInc() -> &ResultT;
+    public func(&mut self) opInc() -> &ResultT;
 }
 ImplMutatingUnaryOp!{ OpInc, opInc, ++, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpDec
 {
     public typealias ResultT;
-    public func(&self) opDec() -> &ResultT;
+    public func(&mut self) opDec() -> &ResultT;
 }
 ImplMutatingUnaryOp!{ OpDec, opDec, --, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
@@ -182,7 +195,7 @@ macro ImplAssignOperator($interfaceName:iden, $methodName:iden, $op:toks, $($ty:
     ${
         impl $ty : $interfaceName<$ty>
         {
-            public func(&self) $methodName(other:&const $ty) -> &$ty
+            public func(&mut self) $methodName(other:&$ty) -> &$ty
             {
                 return self $op other;
             }
@@ -192,85 +205,85 @@ macro ImplAssignOperator($interfaceName:iden, $methodName:iden, $op:toks, $($ty:
 
 public interface OpAddAssign<T>
 {
-    public func(&self) opAddAssign(other:&const T) -> &Self;
+    public func(&mut self) opAddAssign(other:&T) -> &mut Self;
 }
 ImplAssignOperator!{ OpAddAssign, opAddAssign, +=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpSubAssign<T>
 {
-    public func(&self) opSubAssign(other:&const T) -> &Self;
+    public func(&mut self) opSubAssign(other:&T) -> &mut Self;
 }
 ImplAssignOperator!{ OpSubAssign, opSubAssign, -=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpMulAssign<T>
 {
-    public func(&self) opMulAssign(other:&const T) -> &Self;
+    public func(&mut self) opMulAssign(other:&T) -> &mut Self;
 }
 ImplAssignOperator!{ OpMulAssign, opMulAssign, *=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpDivAssign<T>
 {
-    public func(&self) opDivAssign(other:&const T) -> &Self;
+    public func(&mut self) opDivAssign(other:&T) -> &mut Self;
 }
 ImplAssignOperator!{ OpDivAssign, opDivAssign, /=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 public interface OpRemAssign<T>
 {
-    public func(&self) opRemAssign(other:&const T) -> &Self;
+    public func(&mut self) opRemAssign(other:&T) -> &mut Self;
 }
 ImplAssignOperator!{ OpRemAssign, opRemAssign, %=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f16 f32 f64 f128 }
 
 
 public interface OpShlAssign<T>
 {
-    public func(&self) opShlAssign(other: &const T) -> &Self;
+    public func(&mut self) opShlAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpShlAssign, opShlAssign, <<=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpShrAssign<T>
 {
-    public func(&self) opShrAssign(other: &const T) -> &Self;
+    public func(&mut self) opShrAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpShrAssign, opShrAssign, >>=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpAShlAssign<T>
 {
-    public func(&self) opAShlAssign(other: &const T) -> &Self;
+    public func(&mut self) opAShlAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpAShlAssign, opAShlAssign, <<<=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpAShrAssign<T>
 {
-    public func(&self) opAShrAssign(other: &const T) -> &Self;
+    public func(&mut self) opAShrAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpAShrAssign, opAShrAssign, >>>=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpRotlAssign<T>
 {
-    public func(&self) opRotlAssign(other: &const T) -> &Self;
+    public func(&mut self) opRotlAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpRotlAssign, opRotlAssign, <<*=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpRotrAssign<T>
 {
-    public func(&self) opRotrAssign(other: &const T) -> &Self;
+    public func(&mut self) opRotrAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpRotrAssign, opRotrAssign, >>*=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinOrAssign<T>
 {
-    public func(&const self) opBinOrAssign(other: &const T) -> &Self;
+    public func(&mut self) opBinOrAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpBinOrAssign, opBinOrAssign, |=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinXorAssign<T>
 {
-    public func(&const self) opBinXorAssign(other: &const T) -> &Self;
+    public func(&mut self) opBinXorAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpBinXorAssign, opBinXorAssign, ^=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }
 
 public interface OpBinAndAssign<T>
 {
-    public func(&const self) opBinAndAssign(other: &const T) -> &Self;
+    public func(&mut self) opBinAndAssign(other: &T) -> &mut Self;
 }
 ImplAssignOperator!{ OpBinAndAssign, opBinAndAssign, &=, i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize }

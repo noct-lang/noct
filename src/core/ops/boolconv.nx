@@ -2,7 +2,7 @@ module core.ops;
 
 public interface OpBoolConv
 {
-    public func(&const self) opBoolConv() -> bool;
+    public func(&self) opBoolConv() -> bool;
 }
 
 macro ImplBoolConv($($ty:type)*)
@@ -10,7 +10,7 @@ macro ImplBoolConv($($ty:type)*)
     ${
         impl $ty : OpBoolConv
         {
-            public func(&const self) opBoolConv() -> bool
+            public func(&self) opBoolConv() -> bool
             {
                 return !!self;
             }
