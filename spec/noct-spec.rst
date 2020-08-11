@@ -1117,6 +1117,10 @@ Implementation declaration
 
 An implementation declaration allows methods and specific members to be implemented for a specific type, the statement can also implement `strong interfaces`_ for a type.
 
+.. note::
+
+Only 1 interface can be implemented at a type, implementing multiple interfaces can cause issue with generics.
+
 .. code-block::
 
     impl-decl = 'impl', generic-decl, type, [ ':', type ], [ where-clause ], '{', { statement }, '}';
