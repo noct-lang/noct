@@ -584,7 +584,7 @@ A type specifies the properties that a value has:
 
     type = { type-attrib }, ( simple-type | elaborate-type );
     simple-type = builtin-type
-                | identifer-type;
+                | identifier-type;
     elaborate-type = ptr-type
                    | ref-type
                    | arr-type
@@ -841,7 +841,7 @@ A value enum can be declared with a value enum declaration:
 .. code-block::
 
     value-enum-decl = { enum-attribute }, 'enum', identifier, [ ':', int-type ], '{', [ value-enum-member, { ',', value-enum-member }, [','] ], '}';
-    value-enum-member = identifer, [ '=', expression ];
+    value-enum-member = identifier, [ '=', expression ];
 
 ADT enum types
 ``````````````
@@ -852,12 +852,12 @@ An ADT enum can be declared with a value enum declaration:
 
 .. code-block::
 
-    adt-enum-decl = { enum-attribute }, 'enum', identifer, [ generic-decl], '{', [ adt-enum-member, { ',', adt-enum-member }, [','] ], '}';
+    adt-enum-decl = { enum-attribute }, 'enum', identifier, [generic-decl], '{', [ adt-enum-member, { ',', adt-enum-member }, [','] ], '}';
     adt-enum-member = identifier, [ ( '(', type, { ',', type } ) |  ]
 
 Inline enum types
 `````````````````
-An inline enum is an enum which is mostly meant to be the type of a function parameter. It is declared an a value enum, but as the type of a param and cannot assign a value to the members. 
+An inline enum is an enum which is mostly meant to be the type of a function parameter.
 After the declaration of the inline enum, the values can be access in the following way: `::InlEnumMember`, where `InlEnumMember` is the name of the member.
 
 .. code-block::
@@ -955,7 +955,7 @@ Each parameter can also have a parameter label, which is an identifier followed 
     func-named-ret = '((', identifier, { ',', identifier }, ':', type, { ',', identifier, { ',', identifier }, ':', type }, '))';
     parameters = parameter-identifier-list, ':', type;
     parameter-identifier-list = parameter-identifier, { ',', parameter-identifier };
-    parameter-identifier = { func-param-attribute }, [ identifier, '=>' ], identifier;
+    parameter-identifier = { func-param-attribute }, identifier;
     variadic-parameter = identifier, '...'
                        | identifier, ':', type, '...';
     ret-type = type
@@ -1070,37 +1070,6 @@ Function declarations
 .. code-block::
 
     func-decl = { func-attribute }, 'func', identifier, [ generic-decl ], func-signature, [ generic-where-clause ], '{', { statement }, '}';
-
-Function overloading
-^^^^^^^^^^^^^^^^^^^^
-
-Function overloading in Noct works differently to most languages, instead of overloads being differentiated by the types of the parameters, they are differentiated by the name of the parameters.
-
-.. code-block::
-
-    // conventional overloading
-    func Name(a:A) {}
-    func Name(a:B) {} // Error in noct: function with parameter names already exists
-
-    // noct overloading
-    func Name(a:A) {}
-    func Name(b:B) {}
-
-If a function has no overloads, it can be called without specifying the name of the arguments passed, otherwise, the name of the argmument needs to be specified.
-
-.. code-block::
-
-    // functions
-    func NoOverload(a:i32) {}
-    func Overload(a:i32) {}
-    func Overload(b:f32) {}
-    func Overload(c => b:f64) {}
-
-    // calls
-    NoOverload(1);
-    Overload(a:2);
-    Overload(b:3.0f32);
-    Overload(c:5.0);
 
 Method declarations
 ```````````````````
@@ -1357,7 +1326,7 @@ Each condition exists out of 2 main parts::
 
 .. code-block::
 
-    cond-comp-statement = ( '#conditional' | '#debug' ), ' identifier, [ cond-cmp, int-lit ], cond-expression, [ 'else', ( cond-comp-statement | block-statement ) ];
+    cond-comp-statement = ( '#conditional' | '#debug' ), cond-expression, [ 'else', ( cond-comp-statement | block-statement ) ];
 
     cond-expression = cond-sub-expression
                     | cond-multi-expression, { ( '||' | '&&' ), cond-multi-expression };
@@ -2086,7 +2055,7 @@ A range pattern matches any value that fits into the range it creates. This does
 
 .. code-block::
 
-    range-pattern = pattern, ( '..' | '..=' ), pattern;
+    range-pattern = literal, ( '..' | '..=' ), literal;
 
 Tuple pattern
 -------------
@@ -2095,7 +2064,7 @@ A tuple pattern matches the values inside a tuple.
 
 .. code-block::
 
-    tuple-pattern = '(', simple-pattern, { ',', simple-pattern }, ')';
+    tuple-pattern = '(', pattern, { ',', pattern }, ')';
 
 Enum pattern
 ------------
@@ -2104,7 +2073,11 @@ An enum pattern matches the enum member that corresponds to the given value. Thi
 
 .. code-block::
 
-    enum-pattern = qual-name, [ '(' , simple-pattern, { ',', simple-pattern }, ')' ];
+    enum-pattern = value-enum-pattern | adt-enum-tuple-pattern | adt-enum-aggr-pattern;
+    value-enum-pattern = enum-pattern-name;
+    adt-enum-tuple-pattern = enum-pattern-name, '(' , pattern, { ',', pattern }, ')';
+    adt-enum-aggr-pattern = enum-pattern-name, '{' , pattern, { ',', pattern }, '}';
+    enum-pattern-name = [qualified-name], '::', identifier;
 
 Aggregate pattern
 -----------------
@@ -2114,8 +2087,8 @@ Members of an aggregate type are not required to be matched in the same order as
 
 .. code-block::
 
-    aggr-pattern = qual-name, '{', simple-pattern, { ',', simple-pattern }, '}';
-    agg-sub-pattern = [ identifier, ':' ], pattern;
+    aggr-pattern = [qual-name], '{', aggr-sub-pattern, { ',', aggr-sub-pattern }, '}';
+    aggr-sub-pattern = identifier, ':' , pattern;
 
 Slice pattern
 -------------
