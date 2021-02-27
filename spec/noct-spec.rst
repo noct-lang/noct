@@ -970,7 +970,7 @@ A function can 'throw' an error. This is mostly syntactic sugar, as a function t
 
 .. code-block::
 
-    func-throws = 'throws', [ '(', identifier-type, ')' ];
+    func-throws = 'throws', '(', identifier-type, ')';
 
 Note
 ----
@@ -1060,9 +1060,10 @@ A variable declaration generates one or more variables in the current scope. Var
 .. code-block::
 
     var-decl = { var-decl-attribute } typed-var-decl | untyped-var-decl;
-    typed-var-decl = identifier-list, ':', type, [ '=', expression | block-expression ];
-    untyped-var-decl = identifier-list, ':=', expression | block-expression;
-    var-init-decl = expression | block-expression;
+    typed-var-decl = identifier-list, ':', type, [ '=', var-init-decl ];
+    untyped-var-decl = identifier-list, ':=', var-init-decl;
+    var-init-decl = expression | block-expression | var-def-init;
+    var-def-init = '...';
 
 Function declarations
 `````````````````````
@@ -1079,7 +1080,7 @@ Method declarations
     method-decl = normal-method-decl | empty-method-decl;
     normal-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, [ generic-where-clause ], '{', { statement }, '}';
     empty-method-decl = { method-attribute }, 'func', method-receiver, identifier, [generic-decl], func-signature, ';';
-    method-receiver = '(', [ '&', [ 'mut' ] ], 'self', ')';
+    method-receiver = '(', [ 'move' | ( '&', [ 'mut' ] ) ], 'self', ')';
 
 Implementation declaration
 ``````````````````````````
@@ -1134,7 +1135,10 @@ An if statement alters the control-flow, depending on a condition.
 
 .. code-block::
 
-    if-statement = 'if', [ var-decl ';' ], ? expression, except aggr-init-expression ? | block-expression, block-statement, [ 'else', ( if-statement | block-statement ) ];
+    if-statement = if-block-statement | if-do-statement;
+    if-block-statement = 'if', [ var-decl ';' ], ? expression, except aggr-init-expression ? | block-expression, block-statement, [ if-else ];
+    if-do-statement = 'if', [ var-decl ';' ], ? expression, except aggr-init-expression ? | block-expression, 'do', expression, ';', [ if-else ];
+    if-else = 'else', ( if-statement | block-statement | ( 'do', expression, ';' ) );
 
 Loop statements
 ```````````````
@@ -1143,7 +1147,7 @@ A loop statement executes its `body` will be continued to be executed, until the
 
 .. code-block::
 
-    loop-statement = [ label-statement ], 'loop', statement;
+    loop-statement = [ label-statement ], 'loop', block-statement;
 
 While statements
 ````````````````
@@ -1316,7 +1320,7 @@ Conditional compilation statements
 A conditional compilation statement is a statement where the body will only be executed when certain compile conditions are met.
 There is a distinguishment between 2 types of the statements::
 
-    - conditional: always passes when condition is met
+    - cond: always passes when condition is met
     - debug: only passes if condition passes and compiled using debug
 
 Each condition exists out of 2 main parts::
@@ -1326,7 +1330,7 @@ Each condition exists out of 2 main parts::
 
 .. code-block::
 
-    cond-comp-statement = ( '#conditional' | '#debug' ), cond-expression, [ 'else', ( cond-comp-statement | block-statement ) ];
+    cond-comp-statement = ( '#cond' | '#debug' ), cond-expression, [ 'else', ( cond-comp-statement | block-statement ) ];
 
     cond-expression = cond-sub-expression
                     | cond-multi-expression, { ( '||' | '&&' ), cond-multi-expression };
@@ -1394,11 +1398,11 @@ The 'vendor' feature set contains info about the device vendor being used.
 Error handler statement
 -----------------------
 
-An error handler statement is used when calling `try` and an error gets returned. When this statement is present, the `try` will call this handler, instead of propagating the error.
+An error handler statement is used when calling `try` and an error gets returned. When this statement is present, the `try` will call this handler, instead of propagating the error, although the error handler is required to rethrow a valid handler.
 
 .. code-block::
 
-    error-handler-statement = '#errorhandler', '(', identifier, [ ':', type ], ')', '{', { statement }, '}';
+    error-handler-statement = '#errorhandler', '(', identifier, ':', type , ')', '{', { statement }, '}';
 
 Unit test statements
 --------------------
@@ -1524,8 +1528,8 @@ A binary expression uses 2 values, on both sides of it, to generate a new value.
  `>>*`      rotate right                    OpRotr
  `==`       equal to                        OpEq
  `!=`       not equal to                    OpEq
- `..`       range [) (exclusive)            OpRange
- `..=`      range [] (inclusive)            OpRangeInc
+ `..`       range [) (exclusive)            n/a
+ `..=`      range [] (inclusive)            n/a
  `??`       null coalescence                n/a
  `?:`       elvis operator                  n/a
  `in`       contains operator               OpContains
@@ -1586,6 +1590,24 @@ A lower precedence means it will be executed before operators with a higher prec
  10           `&&`
  11           `||`
 ============ ===================================
+
+Range Expressions
+-----------------
+
+A range expression takes 0 to 2 parameters and creates a range with those values. A range expression can be exclusive `..` (last value excluded) or inclusive `..=` (last value included).
+
+There are 4 types of range expressions
+- Range between values (expr at both sides)
+- Range to value (expr on right side)
+- Range from value (expr of left)
+- Full range (no exprs)
+
+.. code-block::
+
+    range-expression = ( unary-expr, ( '..' | '..=' ) | unary-expr ) |
+                       ( unary-expr, '..') |
+                       ( ( '..' | '..=' ), unary-expr ) |
+                       '..';
 
 Unary expressions
 -----------------
@@ -1686,8 +1708,7 @@ If the null-coercing version is used, the expression will return a nullable valu
 
 .. code-block::
 
-    index-slice-expression = expression, ( '[' | '?[' ), ( expression | slice-index ), ']';
-    slice-index = [ expression ], ':', [ expression ];
+    index-slice-expression = expression, ( '[' | '?[' ), expression, ']';
 
 Function call expressions
 -------------------------
@@ -1943,11 +1964,24 @@ Try expressions
 ---------------
 
 A try expression will run a function that can 'throw'.
-When an error handler is defined inside of the function it is called from, the error handler will be called. Otherwise it will propagate the error and 'throw' in the calling function. (When no error handler is defined, the function that uses the try expression, is required to be able to throw a compatible error.)
+
+There are 3 possible try expressions:
+
+1. Propagating try: When an error is encountered, the error will be propagated to the calling function, if no handler is available, the encountered error needs to be compatible with function's error type
+2. Nullable try: When an error is encountered, the nullable version of the return value will be returned
+3. panicing try: When an error is encountered, the program is panic
+
+For each try, if an error handler is available, it will be invoked before doing anything else, when the try is propagating, the result of the handler will be thrown, otherwise the result of the error handler will be discarded
 
 .. code-block::
 
-    try-expr = 'try', operand;
+    try-expr = try-propagate-expr
+             | try-nullable-expr
+             | try-nullpanic-expr;
+
+    try-propagate-expr = 'try', operand;
+    try-nullable-expr = 'try?', operand;
+    try-panic-expr = 'try!', operand;
 
 Special keyword expressions
 ---------------------------
@@ -2277,10 +2311,20 @@ Where clause
 
 The where clause can add additional constraints to a declaration, where the version with the where clause will only be used, if the where clause results in `true`.
 
+There are 2 types of bounds: type and expression bounds.
+
+Type bounds are split up in 2 types:
+- Direct bounds: bounds that are applied directly to a generic type
+- Assoc bounds: bounds that are applied to types that are associated with a generic type
+
 .. code-block::
 
-    generic-where-clause = 'where', type-bound, { ',', type-boundS, };
-    type-bound = type, 'is', type { '+', type };
+    generic-where-clause = 'where', where-bound, { ',', where-bound, };
+    where-bound = (type, type-bound) | expr-bound;
+    type-bound = identifier, 'is', bound-type { '+', bound-type };
+    bound-type = type, [assoc-type-bound];
+    assoc-type-bound = 'with', '(', type-bound, { ',', type-bound }, ')';
+    expr-bound = expr;
 
 Specializations
 ---------------
@@ -2318,8 +2362,8 @@ A first pass is done, which excludes any generics where the `where clause` evalu
 Limitations
 -----------
 
-- Multiple generics with the same identifier, are required to be of the same type, i.e. `struct`, `union`, etc
-- Multiple generics with the same name, and same number of parameters, are not allowed. No distinguishment is made between type or value parameters, only the number of arguments is distinguished.
+- Multiple generics with the same identifier are not allowed, even when they differ in number of generic parameters.
+- When using value generics with an operation that relies on 2 types being equal, the compiler assigns a fuzzy equality to them, which will always be checked during the instantiation phase of the function in which it is being used, i.e. currently the compiler does not see `T!<{N + 1}>` as being truely equal to `T!<{N + 1}>` until instantiation occurs, since they do not refer to the same node in the AST/ITr. This will likely change during a later stage of development of the self-hosted compiler.
 
 Macros
 ======
